@@ -752,15 +752,22 @@ function joinCampaign(code){
       C.suspense=m.suspense;save();renderSusp();}
   }));
 }
-window.addEventListener("gwsync-ready",()=>{
+var campInit=false;
+function campReady(){
+  if(campInit)return;campInit=true;
   SY=window.GWSync||null;
-  if(!SY){cbar(false,"Offline — this device only");$("#campTip").innerHTML="Add your Firebase config to the top of this file to enable shared campaigns.";return;}
   $("#campCode").value=lsGet(LKEY.code);
+  if(!SY){cbar(false,"Offline — this device only");
+    $("#campTip").innerHTML="<b>Sharing is off.</b> Paste your Firebase config into the top of this file (see the setup guide) and reload. The screen works normally offline.";
+    const j=$("#campJoin");if(j){j.disabled=true;j.style.opacity=".45";}return;}
   $("#campJoin").addEventListener("click",()=>joinCampaign($("#campCode").value.trim().toLowerCase()));
   $("#campLeave").addEventListener("click",()=>{lsSet(LKEY.code,"");joinCampaign("");});
   $("#feedClear").addEventListener("click",()=>{if(SY&&joined&&confirm("Clear the shared roll feed for everyone?"))SY.clearRolls();});
   const c=lsGet(LKEY.code);if(c)joinCampaign(c);else cbar(false,"Not in a campaign");
-});
+}
+window.addEventListener("gwsync-ready",campReady);
+setTimeout(campReady,2500);   // fallback: module blocked (e.g. opened as a local file) or no config
+try{$("#cbar").addEventListener("click",()=>{go("party");});}catch(e){}
 
 function diag(html){const host=$("#diag");if(!host)return;const el=document.createElement("div");el.className="msg";el.innerHTML=html+' <button aria-label="dismiss">✕</button>';el.querySelector("button").addEventListener("click",()=>el.remove());host.appendChild(el);}
 function storageOK(){try{localStorage.setItem("__gm_t","1");const v=localStorage.getItem("__gm_t");localStorage.removeItem("__gm_t");return v==="1";}catch(e){return false;}}
