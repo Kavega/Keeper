@@ -31,7 +31,8 @@
   .pc{border:1px solid var(--line);border-radius:10px;background:var(--bg2);margin-bottom:10px;overflow:hidden;}
   .pc>summary{list-style:none;cursor:pointer;padding:10px 11px;}
   .pc>summary::-webkit-details-marker{display:none;}
-  .pc .ph{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
+  .pc .ph{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .pav{width:34px;height:34px;flex:0 0 auto;border-radius:8px;border:1px solid var(--gold-deep);background:var(--bg2) center/cover no-repeat;}
   .pc .pnm{font-size:16px;font-weight:700;color:var(--bone);} .pc .pcl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);}
   .pc .pwho{margin-left:auto;font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;}
   .pc .chev{color:var(--muted);font-size:11px;transition:transform .2s;} .pc[open] .chev{transform:rotate(90deg);}
@@ -650,7 +651,7 @@ function renderParty(list){
       else if(t.val)tags.push(`<span class="ptag">${eh(t.name)} ${t.val}/${t.max}</span>`);});
 
     const sum=document.createElement("summary");
-    sum.innerHTML=`<div class="ph"><span class="pnm">${eh(s.name||"Unnamed")}</span><span class="pcl">${eh(s.cls||"")}</span><span class="pwho">${eh(rec.who||"")}</span><span class="chev">▸</span></div>
+    sum.innerHTML=`<div class="ph">${s.portrait?`<span class="pav" style="background-image:url('${eh(s.portrait)}')"></span>`:""}<span class="pnm">${eh(s.name||"Unnamed")}</span><span class="pcl">${eh(s.cls||"")}</span><span class="pwho">${eh(rec.who||"")}</span><span class="chev">▸</span></div>
       <div class="pstats">${stats}</div><div class="ptags">${tags.join("")}</div>`;
     el.appendChild(sum);
 
