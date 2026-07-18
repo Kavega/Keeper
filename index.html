@@ -344,12 +344,12 @@ window.addEventListener("error",function(ev){
     <div class="body"><div class="xpgrid" id="xpGrid"></div><div class="tip">Fill a box each milestone.</div></div>
   </section>
 
-  <section class="card" id="campCard" style="display:none"><h2>Campaign <span class="hint">shared with your table</span></h2>
+  <section class="card" id="campCard"><h2>Campaign <span class="hint">shared with your table</span></h2>
     <div class="body">
       <label class="field"><span class="lbl">Campaign code</span><input class="inp" id="campCode" placeholder="e.g. frostlands-7t2k" autocapitalize="none" autocorrect="off"></label>
       <label class="field"><span class="lbl">Your name (shown on rolls)</span><input class="inp" id="campWho" placeholder="e.g. Sam"></label>
       <div class="row-actions"><button class="toolbtn" id="campJoin">Join / reconnect</button><button class="toolbtn" id="campLeave">Go offline</button></div>
-      <div class="tip">Everyone at the table types the <b>same code</b>. Your sheet then syncs to the campaign, the GM can see it, and rolls appear in the shared feed on the Roll tab.</div>
+      <div class="tip" id="campTip">Everyone at the table types the <b>same code</b>. Your sheet then syncs to the campaign, the GM can see it, and rolls appear in the shared feed on the Roll tab.</div>
     </div>
   </section>
 
@@ -931,15 +931,24 @@ function joinCampaign(code,who){
     }
   }));
 }
-window.addEventListener("gwsync-ready",()=>{
+var campInit=false;
+function campReady(){
+  if(campInit)return;campInit=true;
   SY=window.GWSync||null;
-  if(!SY){cbar(false,"Offline — this device only",null);return;}
-  $("#campCard").style.display="";
   $("#campCode").value=lsGet(LKEY.code);$("#campWho").value=lsGet(LKEY.who);
+  if(!SY){
+    cbar(false,"Offline — this device only",null);
+    $("#campTip").innerHTML="<b>Sharing is off.</b> To join a shared campaign, paste your Firebase config into the top of this file (see the setup guide) and reload. Everything else works normally and saves to this device.";
+    const j=$("#campJoin");if(j){j.disabled=true;j.style.opacity=".45";}
+    return;
+  }
   $("#campJoin").addEventListener("click",()=>joinCampaign($("#campCode").value.trim().toLowerCase(),$("#campWho").value.trim()));
   $("#campLeave").addEventListener("click",()=>{lsSet(LKEY.code,"");joinCampaign("","");});
   const c=lsGet(LKEY.code);if(c)joinCampaign(c,lsGet(LKEY.who));else cbar(false,"Not in a campaign",null);
-});
+}
+window.addEventListener("gwsync-ready",campReady);
+setTimeout(campReady,2500);   // fallback: module blocked (e.g. opened as a local file) or no config
+try{$("#cbar").addEventListener("click",()=>{go("sheet");try{$("#campCard").scrollIntoView({behavior:"smooth",block:"center"});}catch(e){}});}catch(e){}
 
 function diag(html){const host=$("#diag");if(!host)return;const el=document.createElement("div");el.className="msg";
   el.innerHTML=html+' <button aria-label="dismiss">✕</button>';el.querySelector("button").addEventListener("click",()=>el.remove());host.appendChild(el);}
