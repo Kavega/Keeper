@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16130f">
+<title>Grimwild — Character Keeper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#16130f; --bg2:#0f0d0a; --surface:#211c17; --surface2:#2b241d;
+    --line:#3a3128; --bone:#e8dfce; --bone-dim:#b8ad99; --muted:#867c6c;
+    --gold:#d8a24a; --gold-deep:#a9761f; --rust:#b23a2e; --rust-deep:#7e2820;
+    --thorn:#7c8a90; --thorn-deep:#3f4a4f;
+    --r:12px; --tap:46px; --display:"Zilla Slab",Georgia,serif; --hand:"Caveat","Zilla Slab",cursive;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--bone);font-family:var(--display);font-size:16px;line-height:1.35;
+    padding-bottom:calc(24px + env(safe-area-inset-bottom));-webkit-font-smoothing:antialiased;}
+  h1,h2,h3{margin:0;font-weight:700;letter-spacing:.01em;}
+  button{font-family:inherit;color:inherit;cursor:pointer;}
+  input,textarea,select{font-family:inherit;color:var(--bone);background:transparent;border:none;outline:none;}
+  ::placeholder{color:var(--muted);}
+  .cbar{display:flex;align-items:center;gap:8px;padding:6px 14px;border-top:1px solid var(--line);background:#12100c;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .cbar .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:0 0 auto;}
+  .cbar.on .dot{background:#7fa06a;box-shadow:0 0 6px rgba(127,160,106,.7);} .cbar.on{color:var(--bone-dim);}
+  .cbar .sus{margin-left:auto;color:var(--bone-dim);} .cbar .sus b{color:var(--gold);font-size:14px;}
+  .feedline{font-size:12.5px;color:var(--bone-dim);padding:6px 0;border-top:1px solid var(--line);display:flex;gap:8px;}
+  .feedline .who{color:var(--gold);font-weight:700;flex:0 0 auto;}
+  #diag .msg{background:var(--rust-deep);color:#ffd9d2;font-size:12px;line-height:1.45;padding:10px 12px;border-bottom:1px solid var(--rust);}
+  #diag .msg b{color:#fff;} #diag .msg a{color:#ffe3a3;}
+  #diag .msg button{float:right;background:none;border:none;color:#ffd9d2;font-size:15px;margin-left:8px;padding:0 2px;line-height:1;}
+  summary::-webkit-details-marker{display:none;}
+
+  .apphdr{position:sticky;top:0;z-index:50;background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);}
+  .topbar{padding:calc(9px + env(safe-area-inset-top)) 14px 8px;display:flex;align-items:center;gap:10px;}
+  .brand{font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--gold);font-weight:600;line-height:1.2;}
+  .brand small{display:block;color:var(--muted);letter-spacing:.16em;font-size:8.5px;margin-top:2px;}
+  .brand b{display:block;color:var(--bone);font-size:13px;letter-spacing:.04em;text-transform:none;margin-top:3px;}
+  .spark-mini{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:11px;color:var(--bone-dim);}
+  .pip{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--gold-deep);display:inline-block;}
+  .pip.on{background:radial-gradient(circle at 35% 30%,#ffe3a3,var(--gold) 60%,var(--gold-deep));border-color:var(--gold);box-shadow:0 0 7px rgba(216,162,74,.5);}
+
+  .view{display:none;padding:14px 14px 4px;max-width:600px;margin:0 auto;}
+  .view.active{display:block;}
+  section.card,details.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);margin-bottom:14px;overflow:hidden;}
+  .card>h2,details.card>summary{background:linear-gradient(180deg,#000,#141009);color:var(--bone);
+    font-size:12px;letter-spacing:.2em;text-transform:uppercase;padding:11px 14px;display:flex;align-items:center;gap:8px;list-style:none;}
+  details.card>summary{cursor:pointer;}
+  details.card>summary .chev{margin-left:auto;color:var(--muted);transition:transform .2s;font-size:11px;}
+  details.card[open]>summary .chev{transform:rotate(90deg);}
+  .card>h2 .hint,details.card>summary .hint{font-size:9px;letter-spacing:.1em;color:var(--muted);text-transform:none;font-weight:400;}
+  .card .body{padding:12px 14px;}
+  details.card .body{padding:12px 14px;}
+
+  label.field{display:block;margin-bottom:12px;}
+  label.field:last-child{margin-bottom:0;}
+  label.field .lbl{display:block;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+  .inp,textarea.inp{width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:16px;color:var(--bone);font-family:var(--hand);line-height:1.3;}
+  textarea.inp{resize:vertical;min-height:42px;}
+  .inp:focus,textarea.inp:focus{border-color:var(--gold-deep);box-shadow:0 0 0 2px rgba(216,162,74,.15);}
+  select.inp{font-family:var(--display);}
+
+  .tip{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.4;}
+  .tip b{color:var(--bone-dim);font-weight:600;}
+  .subhead{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:4px 0 8px;}
+
+  /* stats + harm */
+  .statrow{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;}
+  .statcell{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:7px 3px 6px;text-align:center;position:relative;}
+  .statcell.phys{border-top:2px solid #6a5a3f;} .statcell.ment{border-top:2px solid #4a5f6b;}
+  .statcell .nm{font-size:9.5px;letter-spacing:.1em;color:var(--gold);font-weight:600;}
+  .statcell .v{font-family:var(--display);font-size:24px;font-weight:700;width:100%;text-align:center;background:transparent;border:none;margin:1px 0;}
+  .statcell .tbadge{position:absolute;top:5px;right:5px;font-size:8.5px;color:var(--rust);font-weight:700;}
+  .mk{width:19px;height:19px;margin:0 auto;transform:rotate(45deg);border:2px solid var(--gold-deep);background:var(--bg2);border-radius:3px;cursor:pointer;touch-action:manipulation;}
+  .mk.on{background:var(--gold);border-color:var(--gold);}
+  .statcell .rb{width:100%;margin-top:5px;font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--bone-dim);background:var(--surface2);border:1px solid var(--line);border-radius:5px;padding:4px 0;}
+  .statcell .rb:active{background:var(--gold-deep);color:#000;}
+  .harmsvg{width:100%;height:auto;margin-top:6px;display:block;}
+  .harmsvg .node{cursor:pointer;}
+  .harmsvg text{font-family:var(--display);fill:var(--bone-dim);font-weight:700;}
+
+  /* conditions */
+  .cond{display:grid;grid-template-columns:52px 1fr auto auto;gap:6px;align-items:center;margin-bottom:7px;}
+  .cond .dd{background:var(--bg2);border:1px solid var(--line);border-radius:7px;text-align:center;padding:8px 2px;font-family:var(--hand);font-size:16px;}
+  .cond .cn{background:var(--bg2);border:1px solid var(--line);border-radius:7px;padding:8px 10px;font-family:var(--hand);font-size:16px;}
+  .icon-btn{width:36px;height:36px;border:1px solid var(--line);background:var(--surface2);border-radius:7px;color:var(--bone-dim);font-size:14px;}
+  .icon-btn:active{background:var(--gold-deep);color:#000;}
+  .addbtn{background:var(--surface2);border:1px dashed var(--gold-deep);color:var(--gold);border-radius:8px;padding:8px 12px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;width:100%;}
+
+  /* pips / boxes */
+  .piprow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .box{width:24px;height:24px;border:2px solid var(--gold-deep);border-radius:6px;background:var(--bg2);cursor:pointer;touch-action:manipulation;}
+  .box.on{background:radial-gradient(circle at 35% 30%,#ffe3a3,var(--gold) 65%,var(--gold-deep));border-color:var(--gold);box-shadow:0 0 6px rgba(216,162,74,.4);}
+  .box.thread{border-color:#4a5f6b;} .box.thread.on{background:radial-gradient(circle at 35% 30%,#bfe3ef,#6fb0c4 65%,#3a6b7c);border-color:#8fc7d6;}
+  .xpgrid{display:flex;flex-direction:column;gap:5px;align-items:center;padding:4px 0;}
+  .xprow{display:flex;gap:5px;} .xp{width:19px;height:19px;border:2px solid var(--gold-deep);border-radius:5px;background:var(--bg2);cursor:pointer;touch-action:manipulation;} .xp.on{background:var(--gold);border-color:var(--gold);}
+
+  .bond{display:grid;grid-template-columns:38% 1fr;gap:8px;margin-bottom:8px;}
+  .ref{display:grid;grid-template-columns:36% 1fr;gap:6px;margin-bottom:6px;font-size:13.5px;}
+  .ref b{color:var(--gold);} .ref span{color:var(--bone-dim);}
+
+  /* talents */
+  .talent{border:1px solid var(--line);border-radius:9px;margin-bottom:9px;overflow:hidden;background:var(--bg2);}
+  .talent>summary{display:flex;align-items:center;gap:9px;padding:10px 11px;cursor:pointer;list-style:none;font-size:14px;}
+  .talent .tk{width:18px;height:18px;flex:0 0 auto;border:2px solid var(--gold-deep);border-radius:50%;background:transparent;}
+  .talent .tk.on{background:var(--gold);border-color:var(--gold);}
+  .talent .tn{font-weight:600;letter-spacing:.02em;}
+  .talent .chev{margin-left:auto;color:var(--muted);font-size:11px;transition:transform .2s;}
+  .talent[open] .chev{transform:rotate(90deg);}
+  .talent .tt{padding:0 12px 12px 38px;font-size:13.5px;color:var(--bone-dim);white-space:pre-line;line-height:1.45;}
+  .core-t{white-space:pre-line;font-size:14px;color:var(--bone);line-height:1.5;}
+  .core-t .cn{color:var(--gold);font-weight:700;}
+
+  .trk{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  .trk:last-child{border-bottom:none;}
+  .trk .tname{font-size:14px;flex:1 1 auto;min-width:90px;}
+  .trk .tname small{color:var(--muted);font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-left:6px;}
+  .trk .del{color:var(--muted);background:none;border:none;font-size:15px;padding:4px;}
+  .poolctl{display:flex;align-items:center;gap:0;}
+  .poolctl button{width:32px;height:32px;background:var(--surface2);border:1px solid var(--line);color:var(--bone);font-size:17px;font-weight:700;}
+  .poolctl button:first-child{border-radius:8px 0 0 8px;} .poolctl button:last-child{border-radius:0 8px 8px 0;}
+  .poolctl .pc{min-width:40px;text-align:center;font-size:14px;font-weight:700;height:32px;line-height:32px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:0 4px;}
+  .chip{border:1px solid var(--line);background:var(--bg2);color:var(--gold);border-radius:18px;padding:7px 12px;font-size:12px;min-height:36px;cursor:pointer;touch-action:manipulation;}
+  .chip:active{background:var(--gold-deep);color:#000;}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;}
+
+  /* stepper / roller (reused) */
+  .modeseg{display:flex;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:3px;margin-bottom:14px;}
+  .modeseg button{flex:1;padding:9px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;background:transparent;border-radius:7px;color:var(--muted);}
+  .modeseg button.on{background:var(--surface2);color:var(--bone);}
+  .stepper{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);}
+  .stepper:last-of-type{border-bottom:none;}
+  .stepper .lab b{font-size:15px;font-weight:600;} .stepper .lab span{font-size:11px;color:var(--muted);display:block;}
+  .stepctl{display:flex;align-items:center;}
+  .stepctl button{width:var(--tap);height:var(--tap);font-size:22px;font-weight:700;background:var(--surface2);border:1px solid var(--line);color:var(--bone);}
+  .stepctl button:first-child{border-radius:10px 0 0 10px;} .stepctl button:last-child{border-radius:0 10px 10px 0;}
+  .stepctl button:active{background:var(--gold-deep);color:#000;}
+  .stepctl .count{width:46px;text-align:center;font-size:22px;font-weight:700;border-top:1px solid var(--line);border-bottom:1px solid var(--line);height:var(--tap);line-height:var(--tap);}
+  .thorn .lab b{color:var(--thorn);} .thorn .stepctl button:active{background:var(--thorn-deep);color:var(--bone);}
+  .sparkline{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);}
+  .rollbtn{width:100%;margin-top:14px;padding:16px;border:none;border-radius:12px;background:linear-gradient(180deg,var(--gold),var(--gold-deep));color:#1a1206;font-size:16px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;box-shadow:0 6px 18px rgba(216,162,74,.22);}
+  .rollbtn:active{transform:translateY(1px);}
+  .result{margin-top:16px;text-align:center;min-height:8px;}
+  .banner{font-size:32px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;line-height:1;margin-bottom:4px;}
+  .banner.perfect{color:var(--gold);} .banner.messy{color:#e6c98f;} .banner.grim{color:#d98f82;} .banner.disaster{color:var(--rust);} .banner.crit{color:var(--gold);text-shadow:0 0 18px rgba(216,162,74,.6);}
+  .subline{font-size:13px;color:var(--bone-dim);margin-bottom:12px;min-height:16px;}
+  .dice{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;}
+  .die{width:44px;height:44px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;background:var(--surface2);border:2px solid var(--line);color:var(--bone-dim);}
+  .die.d6.high{border-color:var(--gold);color:var(--gold);background:#2c2413;box-shadow:0 0 12px rgba(216,162,74,.45);}
+  .die.d6.six{border-color:var(--gold);color:#1a1206;background:var(--gold);}
+  .die.d8{border-radius:50%;background:#1d2427;border-color:var(--thorn-deep);color:var(--thorn);font-size:16px;}
+  .die.d8.cut{border-color:var(--rust);color:#1a0e0c;background:var(--rust);}
+  .die.dropped{opacity:.32;text-decoration:line-through;}
+  @keyframes tumble{0%{transform:translateY(-8px) rotate(-12deg);opacity:0}60%{transform:translateY(2px) rotate(4deg);opacity:1}100%{transform:none}}
+  .rolling .die{animation:tumble .28s ease both;}
+  .rolling .die:nth-child(2){animation-delay:.03s}.rolling .die:nth-child(3){animation-delay:.06s}.rolling .die:nth-child(4){animation-delay:.09s}.rolling .die:nth-child(5){animation-delay:.12s}.rolling .die:nth-child(n+6){animation-delay:.15s}
+  .crithint{font-size:12px;color:var(--gold);margin-top:10px;background:#2c2413;border:1px solid var(--gold-deep);border-radius:8px;padding:8px 10px;}
+  .log{margin-top:18px;} .log h3{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+  .logline{font-size:12.5px;color:var(--bone-dim);padding:6px 0;border-top:1px solid var(--line);display:flex;gap:8px;}
+  .logline .tag{font-weight:700;flex:0 0 auto;} .logline .tag.perfect{color:var(--gold)}.logline .tag.messy{color:#e6c98f}.logline .tag.grim{color:#d98f82}.logline .tag.disaster{color:var(--rust)}.logline .tag.pool{color:var(--thorn)}
+
+  /* crucible */
+  .themebtns{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;}
+  .theme{flex:1 1 40%;padding:10px;border:1px solid var(--line);background:var(--bg2);border-radius:9px;color:var(--bone-dim);font-size:13px;letter-spacing:.06em;}
+  .theme.on{border-color:var(--gold);color:var(--gold);background:#241d12;}
+  .cruc-out{text-align:center;padding:6px 0 2px;}
+  .cruc-out .ts{font-size:26px;font-weight:700;color:var(--gold);font-family:var(--display);}
+  .cruc-out .fn{font-size:13px;color:var(--bone-dim);letter-spacing:.14em;text-transform:uppercase;margin-top:4px;}
+  .arc{border:1px solid var(--line);border-radius:9px;padding:10px;margin-bottom:9px;background:var(--bg2);}
+  .arc .an{font-weight:700;color:var(--gold);}
+  .arc .am{font-size:12.5px;color:var(--bone-dim);margin-top:3px;white-space:pre-line;}
+  details.cruc{border:1px solid var(--line);border-radius:10px;margin-bottom:10px;background:var(--bg2);overflow:hidden;}
+  details.cruc>summary{list-style:none;cursor:pointer;padding:10px 12px;}
+  details.cruc>summary .crow{display:flex;align-items:center;gap:8px;}
+  details.cruc .cname{font-weight:700;font-size:14px;letter-spacing:.02em;}
+  details.cruc .rollmini{margin-left:auto;background:linear-gradient(180deg,var(--gold),var(--gold-deep));color:#1a1206;border:none;border-radius:7px;padding:7px 12px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;}
+  details.cruc .chev{color:var(--muted);font-size:11px;transition:transform .2s;}
+  details.cruc[open] .chev{transform:rotate(90deg);}
+  details.cruc .cruc-result{margin-top:8px;font-size:17px;color:var(--gold);font-weight:700;min-height:20px;font-family:var(--display);}
+  details.cruc .cruc-result small{display:block;color:var(--bone-dim);font-weight:400;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;margin-top:3px;}
+  details.cruc .cruc-result[data-empty]{color:var(--muted);font-weight:400;font-size:12px;}
+  .cthead{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:10px 0 5px;}
+  .wgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;}
+  .wgrid span{background:var(--surface2);border:1px solid var(--line);border-radius:5px;padding:5px 2px;font-size:10.5px;text-align:center;color:var(--bone-dim);}
+  .itempool{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;}
+  .crefrow{display:grid;grid-template-columns:36% 1fr;gap:8px;padding:5px 0;font-size:12px;border-top:1px solid var(--line);}
+  .crefrow b{color:var(--gold);} .crefrow span{color:var(--bone-dim);}
+  details.cruc .grimadd{background:var(--surface2);border:1px solid var(--gold-deep);color:var(--gold);border-radius:7px;padding:7px 10px;font-size:11px;letter-spacing:.06em;}
+  .ttable{width:100%;border-collapse:collapse;margin-top:10px;font-size:12.5px;}
+  .ttable th,.ttable td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top;}
+  .ttable th{background:#141009;color:var(--gold);font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;}
+  .ttable td:first-child{color:var(--gold);font-weight:700;white-space:nowrap;} .ttable td{color:var(--bone-dim);}
+
+  .row-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .toolbtn{background:var(--surface2);border:1px solid var(--line);border-radius:8px;color:var(--bone-dim);font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:8px 12px;}
+
+  .nav{display:flex;border-top:1px solid var(--line);overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .nav button{flex:1 0 auto;min-width:19.5%;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);padding:8px 6px 7px;font-size:10px;letter-spacing:.05em;text-transform:uppercase;display:flex;flex-direction:column;align-items:center;gap:3px;touch-action:manipulation;}
+  .nav button .ic{font-size:17px;line-height:1;} .nav button.on{color:var(--gold);border-bottom-color:var(--gold);}
+
+  .modal{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:18px;}
+  .modal.open{display:flex;}
+  .modal .sheet{background:var(--surface);border:1px solid var(--line);border-radius:14px;max-width:480px;width:100%;padding:16px;}
+  .modal h3{font-size:14px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;}
+  .modal textarea{width:100%;height:120px;font-family:ui-monospace,monospace;font-size:11px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;color:var(--bone-dim);padding:8px;}
+  .modal .row-actions{justify-content:flex-end;margin-top:12px;}
+  .addform{display:grid;grid-template-columns:1fr auto auto auto;gap:6px;align-items:center;margin-top:6px;}
+  .addform .inp{font-family:var(--display);font-size:16px;padding:8px;}
+  .addform select{background:var(--bg2);border:1px solid var(--line);border-radius:7px;padding:8px 6px;font-size:13px;}
+  .addform input.num{width:48px;background:var(--bg2);border:1px solid var(--line);border-radius:7px;padding:8px 4px;text-align:center;font-size:16px;}
+
+  @media (prefers-reduced-motion:reduce){.rolling .die{animation:none;}.rollbtn:active{transform:none;}}
+</style>
+<script>
+/* ============================================================
+   FIREBASE CONFIG — paste your project's config between the braces
+   to turn on shared campaigns. Leave it empty to run offline-only
+   (everything still works, saved to this device).
+   Firebase console → Project settings → Your apps → Web app → Config
+   ============================================================ */
+window.GW_FIREBASE_CONFIG = {
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
+};
+</script>
+<script>
+/* Early diagnostic: if anything throws (even before the app loads), show it on screen
+   instead of a blank page. Especially useful for reporting issues from a phone. */
+window.addEventListener("error",function(ev){
+  function show(){
+    if(!document.body){return setTimeout(show,50);}
+    var d=document.createElement("div");
+    d.style.cssText="background:#7e2820;color:#ffd9d2;font:13px -apple-system,sans-serif;padding:10px 12px;line-height:1.4;";
+    d.textContent="⚠︎ Script error: "+((ev&&ev.message)||"unknown")+" — please screenshot and send back.";
+    document.body.insertBefore(d,document.body.firstChild);
+  }
+  show();
+});
+</script>
+</head>
+<body>
+<div id="diag" role="alert"></div>
+
+<header class="apphdr">
+  <div class="topbar">
+    <div class="brand">Grimwild<small>Community Edition</small><b id="tbName">New character</b></div>
+    <div class="spark-mini" id="sparkMini"></div>
+  </div>
+  <div class="cbar" id="cbar" style="display:none"><span class="dot"></span><span id="cbarTxt">Offline</span><span class="sus" id="cbarSus"></span></div>
+  <nav class="nav">
+    <button data-view="sheet" class="on"><span class="ic">📜</span>Sheet</button>
+    <button data-view="talents"><span class="ic">✦</span>Talents</button>
+    <button data-view="roll"><span class="ic">🎲</span>Roll</button>
+    <button data-view="crucible"><span class="ic">⚗️</span>Crucible</button>
+    <button data-view="backpack"><span class="ic">🎒</span>Pack</button>
+  </nav>
+</header>
+
+<!-- ===== SHEET ===== -->
+<main class="view active" id="view-sheet">
+  <section class="card">
+    <h2>Character</h2>
+    <div class="body">
+      <label class="field"><span class="lbl">Character name (pronouns)</span><input class="inp" data-k="name" placeholder="Who are you?"></label>
+      <label class="field"><span class="lbl">Path / Class</span><select class="inp" data-k="cls" id="clsSel"></select></label>
+      <label class="field"><span class="lbl">Player name (pronouns)</span><input class="inp" data-k="player"></label>
+      <label class="field"><span class="lbl">Distinctive features</span><textarea class="inp" data-k="features" rows="2"></textarea></label>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Stats &amp; Harm</h2>
+    <div class="body">
+      <div class="statrow" id="statRow"></div>
+      <div id="harmWrap"></div>
+      <div class="tip"><b>Mark</b> a stat: +1t on its next roll, then clear. If it's already marked, take <b>harm</b> instead. <b>Bloodied</b> (physical) +1t Brawn/Agility · <b>Rattled</b> (mental) +1t Wits/Presence · <b>Desperate</b> +1t all. A 2nd desperate drops you. Tap a stat's <b>Roll</b> to throw it with its current thorns loaded.</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Conditions <span class="hint">free-form pools</span></h2>
+    <div class="body">
+      <div id="condList"></div>
+      <button class="addbtn" id="addCond">+ Add condition</button>
+      <div class="tip">Examples: <i>daunted · strained · unsteady · winded · battered · confused · 4d poisoned · 8d witch's curse</i>. Give it a die pool if it's a timer (e.g. <b>4d</b> confused) — roll it to drop 1–3s. +1t when a condition hinders a roll.</div>
+      <div class="tip" style="margin-top:8px;border-top:1px solid var(--line);padding-top:8px"><b>Vex:</b> fight — flight — freeze — freakout</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Spark &amp; Thread</h2>
+    <div class="body">
+      <div class="subhead">Spark (+1d) · max 2</div>
+      <div class="piprow" id="sparkPips"></div>
+      <div class="tip"><b>Take spark:</b> roll a disaster · introduce a tangle · quarrel with an ally · resolve a story arc · an ally's bond with you changes. Spend before a roll for +1d.</div>
+      <div class="subhead" style="margin-top:14px">Thread</div>
+      <div class="piprow" id="threadPips"></div>
+      <div class="tip"><b>Spend thread</b> to establish a character, setting, or scene detail within your vantage. Doubtful details may need a story roll.</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Gear &amp; Background</h2>
+    <div class="body">
+      <label class="field"><span class="lbl">Kit</span><input class="inp" data-k="weapon"></label>
+      <label class="field"><span class="lbl">Backgrounds &amp; wises</span><textarea class="inp" data-k="bg" rows="3"></textarea></label>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Vantage <span class="hint">reference</span></h2>
+    <div class="body">
+      <div class="ref"><b>Certain</b><span>auto-success — it defines who you are</span></div>
+      <div class="ref"><b>Reasonable</b><span>+0/1t — it's implied</span></div>
+      <div class="ref"><b>Doubtful</b><span>+2t or more — it's a stretch</span></div>
+      <div class="ref"><b>Impossible</b><span>no roll — too far outside</span></div>
+    </div>
+  </section>
+
+  <details class="card" id="cardBonds"><summary>Bonds <span class="chev">▸</span></summary>
+    <div class="body" id="bondRows"></div>
+  </details>
+
+  <details class="card"><summary>Traits &amp; Desires <span class="chev">▸</span></summary>
+    <div class="body">
+      <label class="field"><span class="lbl">Traits — 2 you are</span><input class="inp" data-k="traitsAre" placeholder="e.g. Brave, Curious"></label>
+      <label class="field"><span class="lbl">Traits — 1 you're not</span><input class="inp" data-k="traitsNot" placeholder="e.g. Quiet"></label>
+      <label class="field"><span class="lbl">Desires — 2 you want</span><input class="inp" data-k="desireWant" placeholder="e.g. Glory, Knowledge"></label>
+      <label class="field"><span class="lbl">Desires — 1 you don't</span><input class="inp" data-k="desireNot" placeholder="e.g. Wealth"></label>
+      <div class="tip">Options — Traits: brave, caring, confident, curious, gentle, honest, honorable, persistent, protective, quiet, rash, stubborn. Desires: belonging, glory, harmony, honor, justice, knowledge, love, power, renown, thrills, wealth, wisdom.</div>
+    </div>
+  </details>
+
+  <section class="card"><h2>Experience</h2>
+    <div class="body"><div class="xpgrid" id="xpGrid"></div><div class="tip">Fill a box each milestone.</div></div>
+  </section>
+
+  <section class="card" id="campCard" style="display:none"><h2>Campaign <span class="hint">shared with your table</span></h2>
+    <div class="body">
+      <label class="field"><span class="lbl">Campaign code</span><input class="inp" id="campCode" placeholder="e.g. frostlands-7t2k" autocapitalize="none" autocorrect="off"></label>
+      <label class="field"><span class="lbl">Your name (shown on rolls)</span><input class="inp" id="campWho" placeholder="e.g. Sam"></label>
+      <div class="row-actions"><button class="toolbtn" id="campJoin">Join / reconnect</button><button class="toolbtn" id="campLeave">Go offline</button></div>
+      <div class="tip">Everyone at the table types the <b>same code</b>. Your sheet then syncs to the campaign, the GM can see it, and rolls appear in the shared feed on the Roll tab.</div>
+    </div>
+  </section>
+
+  <section class="card"><h2>This device</h2>
+    <div class="body">
+      <div class="tip" style="margin-top:0">Everything autosaves to this phone only. Export to back up or hand your character to someone else.</div>
+      <div class="tip"><b>On iPhone:</b> open this file in <b>Safari</b> (from Files or Share → Open in Safari), then <b>Add to Home Screen</b> so it saves reliably and opens like an app. Opening it straight from Mail/Messages as a preview may not save — Export first if unsure.</div>
+      <div class="row-actions" style="margin-top:10px">
+        <button class="toolbtn" id="btnExport">Export</button>
+        <button class="toolbtn" id="btnImport">Import</button>
+        <button class="toolbtn" id="btnReset">New / clear</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ===== TALENTS ===== -->
+<main class="view" id="view-talents">
+  <section class="card"><h2 id="coreTitle">Core Talent</h2><div class="body"><div class="core-t" id="coreBody"></div></div></section>
+  <section class="card"><h2>Path Talents <span class="hint">circle = taken</span><button class="toolbtn" id="togTaken" style="margin-left:auto;text-transform:none;letter-spacing:0">Taken only</button></h2><div class="body" id="pathList"></div></section>
+  <section class="card" id="otherTakenCard" style="display:none"><h2>Taken from other paths</h2><div class="body" id="otherTaken"></div></section>
+  <details class="card"><summary>Browse other paths <span class="chev">▸</span></summary>
+    <div class="body">
+      <div class="tip" style="margin-top:0">Keep your core talent and take path talents from any class. Talents you take here stay visible above (and their trackers appear automatically), even with this browser collapsed.</div>
+      <label class="field" style="margin-top:10px"><span class="lbl">Browse a path</span><select class="inp" id="otherCls"></select></label>
+      <div id="otherList"></div>
+    </div>
+  </details>
+  <section class="card"><h2>Trackers <span class="hint">tap boxes / roll pools</span></h2>
+    <div class="body">
+      <div id="trkList"></div>
+      <div class="subhead" style="margin-top:14px">Add your own</div>
+      <div class="addform">
+        <input class="inp" id="trkName" placeholder="e.g. Push Yourself, Mischief">
+        <select id="trkKind"><option value="pips">boxes</option><option value="pool">pool (Nd)</option></select>
+        <input class="num" id="trkSize" type="number" value="3" min="1" max="12">
+        <button class="icon-btn" id="trkAdd">+</button>
+      </div>
+      <div class="tip"><b>Push yourself</b> to activate certain talents: after the roll, mark a stat of your choice.</div>
+    </div>
+  </section>
+  <section class="card"><h2>Grimoire <span class="hint">spells · words · notes</span></h2>
+    <div class="body">
+      <div id="grimList"></div>
+      <div class="addform" style="grid-template-columns:1fr auto"><input class="inp" id="grimName" placeholder="e.g. wild · fire · sentinel (Evocation)"><button class="icon-btn" id="grimAdd">+</button></div>
+      <div class="tip">Jot your spell theorems, words of power, rites, maneuvers — anything to reference at the table. Roll one in the <b>Crucible</b> and tap <b>＋ Grimoire</b> to drop it here.</div>
+    </div>
+  </section>
+</main>
+
+<!-- ===== ROLL ===== -->
+<main class="view" id="view-roll">
+  <section class="card"><h2>Dice</h2><div class="body">
+    <div class="modeseg" id="modeSeg"><button data-mode="action" class="on">Action</button><button data-mode="pool">Pool</button></div>
+    <div id="actionCtl">
+      <div class="stepper"><div class="lab"><b>Dice</b><span>stat + assists + talents</span></div>
+        <div class="stepctl"><button data-step="dice" data-d="-1">−</button><div class="count" id="cDice">2</div><button data-step="dice" data-d="1">+</button></div></div>
+      <div class="stepper thorn"><div class="lab"><b>Thorns</b><span>difficulty · d8, cut on 7–8</span></div>
+        <div class="stepctl"><button data-step="thorn" data-d="-1">−</button><div class="count" id="cThorn">0</div><button data-step="thorn" data-d="1">+</button></div></div>
+      <div class="sparkline"><div class="lab"><b style="font-size:15px">Spend spark</b><span style="font-size:11px;color:var(--muted)">adds +1d</span></div>
+        <div class="piprow" id="rollSpark" style="margin-left:auto"></div>
+        <button class="toolbtn" id="spendSpark" style="margin-left:6px">Spend +1d</button></div>
+    </div>
+    <div id="poolCtl" style="display:none">
+      <div class="stepper"><div class="lab"><b>Pool size</b><span>roll all · drop 1–3s</span></div>
+        <div class="stepctl"><button data-step="pool" data-d="-1">−</button><div class="count" id="cPool">4</div><button data-step="pool" data-d="1">+</button></div></div>
+      <div class="tip">Diminishing pool: 2d short · 4d medium · 8d long. At 0d the event comes to pass. If nothing drops: push (mark, drop 1d) or pivot.</div>
+    </div>
+    <button class="rollbtn" id="rollBtn">Roll</button>
+    <div class="result" id="result"></div>
+    <div class="log"><h3>Roll log</h3><div id="logBox"></div></div>
+    <div class="log" id="feedWrap" style="display:none"><h3>Party feed <span style="color:var(--muted);text-transform:none;letter-spacing:0">· everyone's rolls</span></h3><div id="feedBox"></div></div>
+  </div></section>
+</main>
+
+<!-- ===== CRUCIBLE ===== -->
+<main class="view" id="view-crucible">
+  <details class="card" open><summary>Arcana Crucible <span class="hint">touchstone generator</span> <span class="chev">▸</span></summary><div class="body">
+    <div class="subhead">Pick a theme (or more), then roll</div>
+    <div class="themebtns" id="themeBtns"></div>
+    <button class="rollbtn" id="crucRoll">Roll touchstones</button>
+    <div class="cruc-out" id="crucOut"></div>
+    <button class="toolbtn" id="crucGrim" style="margin-top:6px">＋ Grimoire</button>
+    <div class="subhead" style="margin-top:14px">Arcana tiers</div>
+    <table class="ttable">
+      <tr><th>Tier</th><th>Effect</th></tr>
+      <tr><td>Trivial</td><td>Expendable only — a single minor effect. Passive vantage lasts the scene.</td></tr>
+      <tr><td>Minor</td><td>Set-dressing vantage · 2d power pool · once-per-session effect · use a different stat.</td></tr>
+      <tr><td>Major</td><td>Expanded vantage · 4d power pool · once-per-session potent effect · outside help / secondary effect.</td></tr>
+      <tr><td>Mythic</td><td>Powerful, greatly expands vantage · ritual-capable · may have extra potent abilities.</td></tr>
+    </table>
+    <div class="tip">Roll 2 touchstone words + a function to spark an arcana, then assign a tier. <b>Expendable</b> items (potions, scrolls) are one tier higher; unlimited-use are one lower.</div>
+    <details class="cruc" style="margin-top:12px"><summary><div class="crow"><span class="cname">Full theme tables</span><span class="chev">▸</span></div></summary><div class="body" id="arcanaTables"></div></details>
+  </div></details>
+  <div id="moreCrucibles"></div>
+</main>
+
+<!-- ===== BACKPACK ===== -->
+<main class="view" id="view-backpack">
+  <section class="card"><h2>Backpack <span class="hint">found items &amp; gear</span></h2><div class="body">
+    <div id="itemList"></div>
+    <div class="addform" style="grid-template-columns:1fr auto;margin-top:8px"><input class="inp" id="itemName" placeholder="Item name (e.g. Rope, Lantern)"><button class="icon-btn" id="itemAdd">+</button></div>
+    <div class="tip">Add anything you find or carry. Give an item a <b>power pool</b> if it's a limited resource you roll down (e.g. 3d Torches, 2d Rations, a wand's charges).</div>
+  </div></section>
+  <section class="card"><h2>Arcana <span class="hint">magic items</span></h2><div class="body">
+    <div id="arcList"></div>
+    <div class="addform" style="grid-template-columns:1fr auto;margin-top:8px"><input class="inp" id="arcName" placeholder="Name (e.g. Emberglass Lens)"><button class="icon-btn" id="arcAdd">+</button></div>
+    <div class="tip">Note each item's function, touchstones, and tier, and roll its power pool here when you use it.</div>
+  </div></section>
+</main>
+
+<div class="modal" id="modal"><div class="sheet">
+  <h3 id="modalTitle">Export</h3>
+  <textarea id="modalText" spellcheck="false"></textarea>
+  <div class="row-actions"><button class="toolbtn" id="modalCopy">Copy</button><button class="toolbtn" id="modalDo">Load</button><button class="toolbtn" id="modalClose">Close</button></div>
+</div></div>
+
+<script>
+const CLASSES_DATA={"Adventurer": {"core": {"n": "Talented", "t": "You forge your own path forward, unbeholden to any standard but your own. You gain two non-core talents from any path (in addition to the one you start with).\n[Growth: At levels 3 and 6, gain +1 extra talent.]"}, "paths": [], "track": []}, "Artificer": {"core": {"n": "Ingenuity", "t": "You harness the power of creativity. You know 6 touchstones from the arcana crucibles, and have created 2 major arcana using them. Anyone can use them with the most relevant stat (as arcana), though it always carries risk for those other than you. Given time, you can rebuild them using any other touchstones you know—pull off a potent feat of mechanical ingenuity. You can push yourself to do it on the spot.\nEngineer: Take +1d at creating, repairing, or destroying mechanisms and arcana. You can also deconstruct arcana to learn their touchstones, destroying them in the process.\n[Growth: At levels 2, 4, and 6, gain +1 major arcana and +2 learned touchstones.]"}, "paths": [{"n": "Animate Objects", "t": "Given time, you can bestow a semblance of life into objects, giving them a 2d Animated power pool. They can only act within their nature or with simple one-word commands. They can roll 1d of their power pool to assist you. You can reliably command up to three of these at a time, with others following their nature."}, {"n": "Artificial Parts", "t": "You have enhanced replacement body parts. Choose 3 benefits: built-in weapon—detachable—independent—keen sense—storage—strong. Each perk can be activated once per session to take +1d on a related roll. They also have a drawback: noisy—horrifying—unreliable—power source."}, {"n": "Grenades", "t": "Each session, you have a 3d Grenades resource pool. You have access to the following bombs: entangle—force—fiery—gravity—obscuring—stun. These grenades affect multiple targets or an area."}, {"n": "Magnum Opus", "t": "You're in the process of creating a mythic arcana. It has a 6d power pool as normal, but before each session, roll 3 random touchstones. Each time, you can choose 1 touchstone to lock in, never rolling for it again."}, {"n": "Mischief Maker", "t": "You can overload arcana to create a potent effect with it. Make a 2d story roll as the magic goes haywire. Add +1t to the story roll each time you use this, clearing them each session."}, {"n": "Trap Making", "t": "Given time, you can set potent traps, with an effect based on the style: blade—collapse—entangle—fire—poison—alarm. Push yourself to deploy a trap on the spot. On a perfect when triggered, take spark."}, {"n": "Wandslinger", "t": "You have a specialized wand and can use it to fire the following bolts of magic using Wits: acid burst—force blast—ice shard—inferno bolt—static charge—stun beam. Once per session, you can cause a secondary effect (as a critical) related to the type."}], "track": [{"n": "Grenades", "kind": "pool", "d": 3}, {"n": "Mischief", "kind": "pips", "max": 3}, {"n": "Wandslinger", "kind": "pips", "max": 1}]}, "Bard": {"core": {"n": "Inspiration", "t": "Each session, you have 3 inspiration you can use to bolster the spirits of those around you, and influence your foes.\nSpend inspiration to: increase an ally's die result by 1 (3→4)—calm or intensify a vex response—clear a mark from an ally.\nYou can also spend inspiration and roll Presence to: pull off a potent feat of emotional influence—interrupt an impact move—clear rattled from an ally.\n[Growth: At levels 2, 4, and 6, gain +1 inspiration per session.]"}, "paths": [{"n": "Bardic Lore", "t": "You gain any 3 wises and 1 extra thread per session. You take +1d on any story rolls pertaining to what you know or story details you add."}, {"n": "Dynamic Entrance", "t": "You can always appear in a scene exactly where and when you want, limited only by your physical capabilities. Make a 3d story roll to describe your entrance and its effect."}, {"n": "Folk Hero", "t": "You can spend inspiration and spark interchangeably. If your spark die comes up as a 6, you regain it. Tales of your heroism are told throughout the area; track their spread with campaign pools."}, {"n": "Forked Tongue", "t": "When given time, you can tell potent lies. You can push yourself to do it on the spot."}, {"n": "Friendly Face", "t": "In any new town or district of a city you go to, you can always: know someone useful—quickly make a friend—be recognized by a fan. They'll gladly do you a reasonable favor. Take spark if you promise to pay them back."}, {"n": "Jack of All Trades", "t": "You take +1d on montage rolls and have a 3d power pool to represent the smattering of knowledge from your travels."}, {"n": "Wordplay", "t": "On a perfect defense roll when the situation allows for verbal quips, you make them: embarrass themself—let a secret slip—focus on or lose track of you. Once per session, you can goad the GM into spending suspense on conversation."}], "track": [{"n": "Inspiration", "kind": "pips", "max": 6}, {"n": "Jack", "kind": "pool", "d": 3}]}, "Berserker": {"core": {"n": "Frenzy", "t": "Once per session, or when you get bloodied or take vex, you can enter a frenzy for the scene. During the frenzy, you can only take aggressive actions. You:\n• Take +1d for each mark you have and ignore all thorns from harm and marks.\n• Collateral damage: send something flying—smash mooks—throw insults—wreck something.\n• Always get a final action when dropped. On a critical, ignore getting dropped.\nYou can only exit a frenzy when: no challenger stands before you—get dropped—push yourself.\n[Growth: At levels 3 and 6, gain +1 free activation of frenzy per session.]"}, "paths": [{"n": "Fearsome", "t": "Your presence instills fear in others. The GM judges an NPC's response, or you can spend thread to set it: hostile—nervous—respectful—scared. You can push yourself to pull off a potent feat of intimidation."}, {"n": "Flesh Wounds", "t": "When you would get bloodied, you can instead take a Flesh Wound, a condition that inflicts +1t on all rolls, and is cleared when the scene ends. On a disaster, you take the harm as normal."}, {"n": "Into the Fray", "t": "When you're the first into an intense situation, 5s count as 6s, but 4s count as 1s on your first roll. You also setup the first person following you regardless of your outcome."}, {"n": "Joyful Warrior", "t": "On a critical or when bloodied in battle, you take spark and can: clear one mark from each ally—bring a dropped (not dead) ally back into the scene."}, {"n": "Mighty", "t": "When given time, you can pull off potent feats of raw strength. You can push yourself to do it on the spot."}, {"n": "Overkill", "t": "On a critical when bringing violence, threats, or destruction to bear, you can: cause an extra secondary effect—roll the related task pool twice."}, {"n": "Warcry", "t": "Each session, you have 2 inspiration, as the talent. You can spend one to: increase an ally's die result by 1 (3→4)—calm or intensify a vex response—clear a mark from an ally. [Prohibited: Bard]"}], "track": [{"n": "Frenzy", "kind": "pips", "max": 3}, {"n": "Flesh Wounds", "kind": "pips", "max": 3}, {"n": "Warcry", "kind": "pips", "max": 2}]}, "Cleric": {"core": {"n": "Channel Divinity", "t": "You can call upon your deity to channel their magic. You roll a rite pool to cast spells, and that pool and your god's title serve as touchstones. Your major rite is a 6d power pool, and your minor rites are 4d power pools. They replenish each session. You can drop 1d and roll to cast a potent spell. Spells without risk are automatically successful, unless potent.\n[Growth: At levels 3 and 6, gain +1d each rite power pool.]"}, "paths": [{"n": "Blessed", "t": "Once per session, you can re-roll a roll you just made as your god attempts to intervene. The re-roll is made without any thorns on it. On a perfect, take spark."}, {"n": "Devout", "t": "Intelligent creatures recognize you as a person of deep honesty and only your most hated enemies would treat you with a lack of respect or doubt your word. You are never seriously injured or killed by an enemy, unless they have no choice. Any creature with speech will always hear you out. This aura is upheld by your unwavering commitment—you must push yourself to act in bad faith."}, {"n": "Healer", "t": "You take +1d when you heal someone, with magic or treatment. On a critical, both of you take spark. One time only, you can bring back the recently dead. Common sense takes precedent."}, {"n": "Iron Will", "t": "Each session, you have a 2d Iron Will resource pool. When you get rattled or take vex, roll the pool to ignore it. If the situation allows for it, you can also lash out at the cause or a bystander and: instill dread in their heart—sow doubt in their mind."}, {"n": "Rings False", "t": "You always know when someone is lying, though not necessarily the truth. You take +1d on a follow-up if you reveal you know they're lying."}, {"n": "Sermons", "t": "When given time, you can pull off a potent feat of persuasion in the name of your beliefs, like commanding a crowd or showing the goblins the glory of your god. You can also push yourself to do it on the spot. One time only, you can make this a ritual-level effect."}, {"n": "Shepherd", "t": "When you assist an ally on a defense roll that would leave them rattled or with vex, you can invoke your bond to take +1d on the roll. On a perfect, you both take spark."}], "track": [{"n": "Major Rite", "kind": "pool", "d": 6}, {"n": "Minor Rite", "kind": "pool", "d": 4}, {"n": "Minor Rite", "kind": "pool", "d": 4}, {"n": "Iron Will", "kind": "pool", "d": 2}]}, "Druid": {"core": {"n": "Wild Shape", "t": "Shift into any familiar beast form by using a 2d Wild Shape resource pool, replenishing each scene. You take on the form's physical qualities and feral instincts, moving stat points to represent this (min 1, max 3). You lose access to your own physical talents. Drop 1d before rolling for each wild talent, such as: aquatic—smaller than a cat—bigger than a bear—flight—a thematic path talent.\n[Growth: At levels 3 and 6, gain +1d to your Wild Shape pool per scene.]"}, "paths": [{"n": "Augury", "t": "You can read the world around you and interpret its signs. Before each session, roll 2d and record the results. These are your Omens. During the session, you can replace any rolled d6 (by anyone) with an omen result, then erase it."}, {"n": "Awaken", "t": "Once per scene, you may awaken a living natural feature—plants, animals, fungi, or the like—within or nearby the scene. It gains awareness and purpose, forming a 3d power pool you can direct, guided by its nature. One time only, you can make this a ritual-level effect."}, {"n": "Kindred Spirits", "t": "You can speak with all manner of wild things. When you meet, they know of you. Roll their bond with you or spend thread to establish it. When you call, those nearby will answer. You always sense the presence of hidden dangers in places teeming with wildlife."}, {"n": "Primal Growth", "t": "You can move through any natural terrain quickly and without issue. Once per session you can grow, wither, or shape: crops—dense foliage—entangling vines—fungi—poisonous spores. You can push yourself to do it again. You don't need anchors on plant or harvest rituals."}, {"n": "Primordial Bonds", "t": "You have spellcasting ability, using raw elemental power (Fire, Earth, Air, or Water) as the touchstone, and casting spells with Presence. On a critical using an element, charge it. Spend it to cast a potent spell with that element."}, {"n": "True Shape", "t": "Choose 1 beast form. If it has no wild talents, you can shift into it without using a wild shape pool. If it has wild talents, you drop 1d less than normal when you shift into it."}, {"n": "Windcaller", "t": "Your voice carries on the winds over great distances. Once per session, you can summon or dismiss, but not control: dense fog—extreme temperatures—heavy rain—snowfall—storms—strong winds. You can push yourself to do it again. You can perform weather rituals without anchors."}], "track": [{"n": "Wild Shape", "kind": "pool", "d": 2}, {"n": "Omens", "kind": "pips", "max": 2}]}, "Fighter": {"core": {"n": "Weapon Mastery", "t": "Choose a fighting style you have mastered: brawling—dual-wielding—one-handed—ranged—two-handed. When you fight, defend, or assist in your style, take +1d. Each scene, you have 2 mastery to spend when using this style to add a critical effect.\nExample Maneuvers: blind—disarm—knockdown—pin down—pull—push—sunder—unnerve.\n[Growth: At levels 3 and 6, gain +1 Mastery per scene.]"}, "paths": [{"n": "Arcane Training", "t": "You have spellcasting as the Spellcraft talent. You can cast 3 spells and 1 potent spell per session. You know 3 spell theorems, created with the Spell Crucible, and can learn new spells from scrolls. [Prohibited: Wizard]"}, {"n": "Bulwark", "t": "Each session, you have a 2d Bulwark resource pool from armor or other defenses. When you take physical harm, you can roll the pool to ignore the damage."}, {"n": "Control", "t": "Once per session, you can declare a zone that enemies cannot cross without dealing with you. If they attempt to move past you, you can interrupt them. On a perfect, take spark. You can push yourself to do it again."}, {"n": "Got Your Back", "t": "Once per session, you can assist an ally after they roll a grim. The ally can also roll 1d. On a perfect, you both take spark. You can push yourself to do it again."}, {"n": "Measured Tones", "t": "When you speak in measured tones, people always stop and listen—you can declare low stakes if desired. Unless completely surprised, you can push yourself to interrupt an impact move initiating aggression. If you change their mind, take spark."}, {"n": "Swift Recovery", "t": "On a perfect roll with an unmarked stat, clear a mark on another stat."}, {"n": "Tactician", "t": "Once per session during an intense action sequence, you tag 3 scene elements right away, and 1 later. When an ally interacts with a tagged element, you assist without risk. If no roll is needed, they take spark. You can push yourself to do it again."}], "track": [{"n": "Mastery", "kind": "pips", "max": 4}, {"n": "Bulwark", "kind": "pool", "d": 2}]}, "Monk": {"core": {"n": "Discipline", "t": "Never face a disadvantage due to a weapon matchup. Once per session, you can interrupt with a: philosophical point—quick reaction—stunning strike. Each scene, you have 4 flow. Spend it to:\n• Ignore thorns from: being outnumbered—a single imposing opponent.\n• Attempt a fluid maneuver. Before rolling, declare you want to also: disarm them—redirect momentum—reposition you, them, or both. On a perfect or messy, it happens.\n• Pull off a potent feat of mystical grace, like running across water or falling harmlessly. For 1 more flow, extend this to those you're touching.\n[Growth: At levels 3 and 6, gain +1 flow per scene and +1 interrupt per session.]"}, "paths": [{"n": "Healing Hands", "t": "You can heal a bloodied ally. It clears, but you must make a Presence defense roll against being bloodied—you take their pain onto yourself and must fend it off."}, {"n": "Lightning Reflexes", "t": "You can always act first, unless completely surprised. You also ignore thorns on Agility defense rolls, except for those from marks, harm, and conditions."}, {"n": "Mind Over Matter", "t": "When you take a physical mark, you can instead choose to take a mental mark. When you clear a mark by rolling it, take spark."}, {"n": "Redirect", "t": "On a perfect defense against physical attack, you can push yourself to turn it back on your foe."}, {"n": "Resonance", "t": "When you would drop a foe, you can instead keep their lifeforce. They know you hold their fate. In the near future, you can decide to let go, and: drop them instantly—take spark and release them. One time only on a perfect, you can immediately drop a foe you strike."}, {"n": "Tether", "t": "Once per session, touch someone to link spirits. You can sense their feelings, speak in their mind, and know where they are. You can push yourself to: assist them without risk—take mental damage for them—teleport to them. If they get dropped, so do you."}, {"n": "There Is No Try", "t": "When putting your life or something you hold equally dear on the line, 5s count as 6s, and 4s count as 1s. This generally occurs with high risk or after being bloodied."}], "track": [{"n": "Flow", "kind": "pips", "max": 6}, {"n": "Interrupt", "kind": "pips", "max": 3}]}, "Paladin": {"core": {"n": "Oathsworn", "t": "You draw power from your three tenets. When you add a thorn from bloodied, rattled, or desperate, you also take +1d. Each session, you have 3 smite. When acting with total conviction, spend it 1-for-1 to drop dice from a task pool after rolling it.\nAffirmation: Before each session, state your tenets and discuss how they came up last session. Give spark to one player who joined a scene involving your tenets. Take 1 less smite for each tenet in violation.\n[Growth: At levels 2, 4, and 6, gain +1 smite per session.]"}, "paths": [{"n": "Aegis", "t": "You take +1d when making a defense roll to protect yourself from physical harm. On a perfect, you can also: keep their attention on you—rekindle hope in an ally—inspire action in a bystander."}, {"n": "Authority", "t": "Your presence fills the air with authority. The GM judges an NPC's response, or you can spend thread to set it: admiration—obedience—respect—defiance. You can push yourself to pull off a potent feat of righteous command."}, {"n": "Challenge", "t": "Once per session you can challenge a foe, taking +1d on all rolls against them, but give them 1 suspense. If they do anything besides confront you, you can interrupt it. The challenge ends if an ally engages your foe, or your interrupt result is less than a perfect. You can push yourself to do it again."}, {"n": "Dauntless", "t": "Take spark when your roll is cut. Take +1d on story rolls if dropped. On a perfect, ignore it."}, {"n": "Divine Blessing", "t": "You have spellcasting as the Channel Divinity talent. Detail your god and choose 1 rite, a 4d power pool (per session). You can drop 1d and roll the pool to cast a potent spell. [Prohibited: Cleric]"}, {"n": "Guardian", "t": "Take +1d when you assist on a defense roll. You can also make a defense roll for an ally when they would be affected by an impact move, or push yourself to defend multiple nearby allies from a single attack."}, {"n": "Rebuke", "t": "When the GM spends suspense to prompt an impact move, you take +1d on any follow-up action against the source. On a critical, take spark."}], "track": [{"n": "Smite", "kind": "pips", "max": 6}, {"n": "Tenets (in violation)", "kind": "pips", "max": 3}, {"n": "Divine Rite", "kind": "pool", "d": 4}]}, "Psion": {"core": {"n": "Awakened Mind", "t": "You have spellcasting ability. Choose two bastions which act as the touchstone for your psionic magic. You cast spells using Wits, and can make them potent by adding instability, eventually adding increasing thorns to your future spellcasting rolls. You can't cast potent spells once adding +2t from instability. Thorns from instability can't be ignored and reset at the beginning of each session. You gain more slots that don't add instability with growth.\n[Growth: At levels 3 and 6, gain +1 instability slot at 0d, and +1 bastion.]"}, "paths": [{"n": "Echo", "t": "Once per session, you can create a duplicate as a 3d power pool. It is a second version of you, acting as you with shared knowledge, ability, and resources. You can drop 1d of its pool to have it: assist you—trade places with you."}, {"n": "Foresight", "t": "You can catch small glimpses of the future. Once per session, you can describe a brief course of action while in a calm situation, and the GM will tell you the result. If there's risk, make a montage roll to see how it would play out. Afterward, you can decide whether to take the action."}, {"n": "Mind Blast", "t": "On a critical on a bastion roll, you don't add instability, instead clearing one. This causes mental collateral damage around you: confusion—hallucinations—headaches—panic. One time only, you can make this a ritual-level effect, affecting all within miles."}, {"n": "Psychic Warrior", "t": "You're able to turn your psychic volatility against others. You can create weapons made from pure willpower, using them with Wits. You take +1d to follow up with them when you: take vex—increase your instability level."}, {"n": "Reader", "t": "You gain 1 thread per session and can spend thread when you first meet someone to know their foremost surface thought—they are like an open book to you. If you follow-up on it, it counts as a setup."}, {"n": "Tumultuous Mind", "t": "Your fractured mind bleeds into the consciousness of others. The GM judges an NPC's response, or you can spend thread to set it: agitated—confused—paranoid—forgetful. Once per session, when you would take vex, a nearby creature must take it instead."}, {"n": "Shift Form", "t": "Each session, you have a 2d Shifter resource pool. You can roll the pool to alter your features and form, though you keep the same basic shape."}], "track": [{"n": "Instability (+t)", "kind": "pips", "max": 6}, {"n": "Echo", "kind": "pool", "d": 3}]}, "Ranger": {"core": {"n": "Quarry", "t": "Twice per session, you can designate a target as your Quarry—the focus of your hunt. Until the end of the session, you have a 2d Quarry pool rolled as bonus dice to research or locate them, and when anyone attacks or defends against them. When a Quarry die rolls a '6', that PC takes spark.\nProwler: You take +1d when using stealth, traversal, and traps in familiar terrain.\n[Growth: At levels 3 and 6, gain +1d Quarry pool.]"}, "paths": [{"n": "Animal Companion", "t": "You're accompanied by a fiercely loyal animal. Each PC adds a reciprocal bond with it. Choose 3 tricks and 2 flaws. You roll 3d for its tricks and 1d otherwise. It has only two damage boxes, marked (for any mark) and hurt (for any harm). It can always exit a scene when hurt. If lost, you can bond with a new animal.\nTricks: distract—fight—guard—perform—rescue—retrieve—scout—search—track—warn.\nFlaws: aggressive—clumsy—grumpy—insatiable—jumpy—noisy—overprotective—scary—unruly."}, {"n": "Keen Senses", "t": "Your senses are twice as sharp as normal. You can pull off potent feats of tracking and you always notice the presence of living creatures near you, though details are unclear."}, {"n": "Relentless", "t": "You can pull off potent feats of traversal and can always move at full speed, unhindered by what's in your way."}, {"n": "Scout Ahead", "t": "You gain 1 thread per session and can spend thread to flashback to scouting ahead and: sabotage something—set a trap—survey the area (ask 2 questions)—take out a danger—set up an interrupt. Make a 3d montage roll. The GM always takes suspense in place of an impact move."}, {"n": "Seasoned Hunter", "t": "You can push yourself to tell your allies to Look Out! and goad the GM into spending suspense on a move you declare to attack your party. Anyone involved takes +1d on a defense roll and follow-up action rolls."}, {"n": "Sharpshooter", "t": "When given time, you can pull off potent feats of ranged precision. You can push yourself to do it on the spot."}, {"n": "Trophies", "t": "When you play a key part in slaying a powerful monster, you can take a trophy from it. This acts as a major expendable arcana. Use the monster's name, ability, and a function as the touchstones. You also gain 1 major expendable arcana—detail it."}], "track": [{"n": "Quarry", "kind": "pips", "max": 2}, {"n": "Companion Mark", "kind": "pips", "max": 1}, {"n": "Companion Hurt", "kind": "pips", "max": 1}]}, "Rogue": {"core": {"n": "Expertise", "t": "Choose three skills below as your skill set. Take +1d when using a chosen skill. Each session, you have a 4d Competence pool to represent your focus under pressure. You can roll it as bonus dice after any of the chosen skills.\nAbove board: duel—evade—investigate—persuade—track—traverse.\nBelow table: ambush—forgery & disguise—lying—sabotage—sleight of hand—stealth.\n[Growth: At levels 3 and 6, gain +1d Competence per session and +1 skill.]"}, "paths": [{"n": "According to Plan", "t": "You gain 1 thread per session and can spend thread to flashback, establishing how you planned for the current situation. Make a montage roll, taking +1d if it fell within your expertise. The GM must take suspense in place of an impact move."}, {"n": "Distraction", "t": "On a perfect, you can setup an ally and pass them the spotlight, even if the GM wants to spend suspense."}, {"n": "Eldritch Affinity", "t": "You have spellcasting, as the Sorcery talent. You roll Presence to cast and choose 3 from magic paths and techniques. You can't cast potent spells, nor do you risk a magical twist. [Prohibited: Sorcerer]"}, {"n": "Lurker", "t": "On a perfect sneaking past or secretly observing sentient creatures, they: let a secret slip—give you a golden opportunity. If caught sneaking, you can push yourself to stay completely still and avoid detection, but must leave the area immediately after."}, {"n": "Opportunist", "t": "When someone nearby rolls defense, you take +1d on an immediate follow-up. On a critical by a nearby ally, you can push yourself to add a critical bonus."}, {"n": "Poisoner", "t": "Each session, you have a 4d Poisons resource pool. You have access to the following poisons: hallucinations—knockout—memory loss—nausea—paralytic—truth serum. They each take a bit of time to work and are most effective if ingested."}, {"n": "Weasel", "t": "Once per session, if caught in a lie or red-handed, you can weasel your way out—for now. Make a story roll to see if they realize their mistake later. You can push yourself to do it again."}], "track": [{"n": "Competence", "kind": "pool", "d": 4}, {"n": "Poisons", "kind": "pool", "d": 4}]}, "Sorcerer": {"core": {"n": "Sorcery", "t": "You have spellcasting ability. You roll Presence to cast and your magic paths and techniques serve as touchstones. Your spells always carry risk and require a roll. You can push yourself to cast a potent spell. When casting, rolling two or more 1s (thorns included) triggers a magical twist. Choose any 4 Magic Paths and Techniques (at least 1 of each) and how your twists manifest.\nMagical twists: wild surge (2d story roll for effect)—take vex—curse (+1 suspense).\nMagic paths: blood—decay—flame—frost—lux—shadow—stone—tempest.\nTechniques: attack—create—defend—enhance—hinder—influence—transform—traverse.\n[Growth: At levels 2, 4, and 6, gain +1 new magic path or technique.]"}, "paths": [{"n": "Eldritch Growth", "t": "Intense magic has twisted your body. You gain a permanent physical feature like metal-rending claws, fiery breath, or venomous fangs."}, {"n": "Maelstrom", "t": "You open yourself fully to the maelstrom of raw magic. When you cast a potent spell, 5s count as 6s, but 4s count as 1s. When rolling two or more 1s (including these 4s), you trigger a magical twist, as Sorcery."}, {"n": "Magic Sense", "t": "You always notice magical effects near you, and take +1d when you disrupt them. Given time, you can discern their details (ask 2 questions)."}, {"n": "Metamagic", "t": "Twice per session, you can alter your magic as it flows through you, modifying the effect or casting by giving it an extra touchstone: controlled—distant—intense—lasting—subtle—quick."}, {"n": "Spelleater", "t": "Each session, you have a 2d Spelleater resource pool. When you suffer from magic, you can roll the pool to ignore the effect. When the pool drops to 0d, your next action is potent."}, {"n": "Wisps", "t": "Two small magical motes float around you. Give them 2 traits such as: annoying—melancholic—mesmerizing—petty—troublesome—whimsical. You can sacrifice one to have it act independently, making a story roll if needed. They return each session."}, {"n": "Wrath", "t": "When a nearby ally takes harm or is dropped, you take +1d and potency on your next spell, if you immediately lash out."}], "track": [{"n": "Metamagic", "kind": "pips", "max": 2}, {"n": "Spelleater", "kind": "pool", "d": 2}, {"n": "Wisps", "kind": "pips", "max": 2}]}, "Summoner": {"core": {"n": "Vassal", "t": "You have a connection with a creature from another plane, and are able to call upon and direct it with a 4d power pool. The pool returns to its max once at 0d, or when you push yourself. It has 1 aspect, a strange trait defining it such as: big enough to ride—flight—swarm—a thematic path talent.\nIt can take 1 mark and 1 harm, with any more breaking the anchors holding it here. Make a 2d story roll to see the fallout before it disappears. You can resummon it every scene.\n[Growth: At levels 3 and 6, it gains +1 aspect.]"}, "paths": [{"n": "Binding Word", "t": "Add contracts as a wise. If you're present for an agreement, you can make it binding. Both parties know if it's broken, with the defaulting party afflicted by a potent spell, using the contract details as touchstones. One time only, you can make this a ritual-level effect."}, {"n": "Fierce Protector", "t": "Once per session, a creature you control can interrupt an impact move against you. On a grim, they take the impact move instead. Either way, you take +1d on your follow-up against the attacker."}, {"n": "Ley Magic", "t": "Once per session, you can temporarily alter the leylines in the area to: draw or repel certain creatures—enhance or dampen magic. When you alter a place like this, you know when others enter the area. You can push yourself to do it again."}, {"n": "Monster Menagerie", "t": "You have a bond with 3 different creatures, all with their own aspects. When you summon a vassal, you can choose which answers the call."}, {"n": "Pocket Plane", "t": "Given time, you can open a hole to a small pocket dimension about the size of a room. You can push yourself to open it on the spot. If dropped, make a story roll to see what happens inside as the plane collapses. You don't need anchors for planar travel rituals."}, {"n": "Portal Network", "t": "Given time, you can: establish a waypoint in your network—open a portal from one waypoint to another. You can push yourself to make a temporary link in the moment, but doing so carries risk. Those around you can use the portal as well. Define how you travel, such as by: shadows—trees—doorways—dreams."}, {"n": "Shared Soul", "t": "You can merge with your vassal, sharing path talents, aspects, and incoming harm. You can choose to use the power pool or your own stats, and when your anchors break, take +1d on the story roll."}], "track": [{"n": "Vassal", "kind": "pool", "d": 4}, {"n": "Vassal Mark", "kind": "pips", "max": 1}, {"n": "Vassal Harm", "kind": "pips", "max": 1}]}, "Swashbuckler": {"core": {"n": "Panache", "t": "You wield the spotlight as well as any blade, allowing great feats of charm and skill. Each scene, you have 2 panache to fuel your derring-do. Before making a roll, you can spend panache, removing that many thorns. If you remove all thorns, they become panache dice instead, increasing the final result level on a 7 or 8. When one of your rolls is cut by a thorn, you gain 1 panache (ignoring your max).\nQuick Wit: Once per session, you can interrupt an impact move with a: humorous quip—quick flourish—timely distraction.\n[Growth: At levels 2, 4, and 6, gain +1 panache per scene.]"}, "paths": [{"n": "Audacity", "t": "When you act with pure reckless abandon, 5s count as 6s, but 4s count as 1s on a follow-up. Regardless of the outcome, those around you are briefly struck by: awe—bewilderment—panic—excitement."}, {"n": "Fancy Footwork", "t": "On a perfect when you fight to setup an advantage or otherwise improve your positioning, you can roll a related task pool by: seizing an opening—unnerving your foe."}, {"n": "Improvise", "t": "Once per session, you can describe your creative use of your surroundings to take +1d. These improvised weapons and tools often stretch the bounds of reality with their use. You can push yourself to do it again."}, {"n": "Lucky", "t": "Each session you have a 1d Luck pool. You can roll it as a bonus die after any roll you make and story rolls related to you. On a grim, take spark."}, {"n": "Natural Moxie", "t": "Choose two skills from the Expertise talent. Take +1d when using these skills. [Prohibited: Rogue]"}, {"n": "Provoke", "t": "Once per session, through insult, boast, or challenge, you can goad the GM into spending suspense on an impact move targeting only you. You take +1d on the defense roll, and on a perfect, they: are compelled to keep lashing out—leave an opening—are utterly embarrassed."}, {"n": "The Legend Of...", "t": "Many recognize you as a hero, others as a cad and ne'er-do-well. Track tales of your exploits with campaign pools. When you play into it by: leaving a calling card—saying your catchphrase in a dramatic moment—indulging a fan, take spark."}], "track": [{"n": "Panache", "kind": "pips", "max": 6}, {"n": "Interrupt", "kind": "pips", "max": 1}, {"n": "Luck", "kind": "pool", "d": 1}]}, "Warlock": {"core": {"n": "Pact", "t": "You have magic bestowed by a patron, allowing you to make a story roll (usually 3d) to wield their magic as a weapon, or ask to channel a potent magical effect using their nature as the touchstone. They gift you an Eldritch Talent—a changeable path talent manifesting with your patron's trappings. Given time to commune, you can change an Eldritch Talent.\nYou also have an 8d Patience pool, representing service to your fickle patron's desires. Roll the pool when you ask for a potent magical effect, change an Eldritch Talent, or otherwise displease them. At 0d, your patron will give you a visit to clear up the issue, then the pool resets.\n[Growth: At levels 3 and 6, gain +1 Eldritch Talent.]"}, "paths": [{"n": "Affliction", "t": "Once a session, you can place your hands on another to heal your harm by transferring the injury. Allies can roll defense to resist this effect. Talk with your GM about transferring other maladies, such as conditions."}, {"n": "Blood Rituals", "t": "Take +1d on a ritual's invocation and replace any one of its anchors with yourself. When you complete a ritual in this way, take spark."}, {"n": "Knowing Gaze", "t": "When given time, you can stare into someone's eyes and learn: the price of their loyalty—their biggest fear—their greatest desire—their next move—what they're hiding—whom they serve. This gaze only works on someone once. You can push yourself to do this on the spot."}, {"n": "Magus", "t": "You can use your weapon as a touchstone, and add a magical weapon style, such as: flaming—returning—seeking. On a perfect with this weapon, you can push yourself to add a secondary effect based on the magical style. Given time, you can change the style."}, {"n": "Otherworldly Form", "t": "You can turn into a floating, dispersed form, flavored after your patron's trappings. Choose three things you can do in this form: appear barely visible—fly high in the sky—interact with objects—move swiftly—slip through small gaps—speak."}, {"n": "Visions", "t": "You can open your mind to seek forbidden knowledge. Ask the GM a specific question. The answer may be cryptic or twisted, but it will never be a lie. Make a defense roll against rattled after the answer."}, {"n": "Wayfarer", "t": "You can push yourself to teleport. The further or less familiar, the less precise. Max range is two days' ride away. Make a story roll if you can't see the destination or take allies you touch with you."}], "track": [{"n": "Patience", "kind": "pool", "d": 8}]}, "Witch": {"core": {"n": "Words of Power", "t": "You understand the ancient magic inherent in the world. You have spellcasting ability, rolling Presence to cast using any 2 words of power as the touchstones. When you use a word, burn it—you can't use it again until the next session. Given time, you can make this spell potent. You begin with 6 words of power from the crucible. Spells without risk are automatically successful and don't burn words, unless potent.\nRitualist: Take +1d when completing ritual invocations, and you can use relevant words of power as anchors.\n[Growth: At levels 2, 4, and 6, gain +2 words of power.]"}, "paths": [{"n": "Bailiwick", "t": "You are known to other witches by a title and the power inherent in your magical domain—your Bailiwick. Choose 1 word of power. You can burn any other word to use it, and on a critical, you regain the use of all words."}, {"n": "Evil Eye", "t": "You can roll Presence to hex someone with: dread—clumsiness—confusion—forgetfulness—misfortune—sleepiness. Decide when it takes effect: now—soon—much later—specific trigger. This magic only works on someone once."}, {"n": "Familiar", "t": "You manifest a small magical creature. You can communicate telepathically, use its senses, and send it on simple tasks, making a story roll to see how it goes. You can also push yourself to cast a spell through it. If your familiar takes damage, it vanishes and reappears at the start of the next scene."}, {"n": "Herbalism", "t": "Before each session, use the herbalism crucible to make two herb names. Each session, you have 1 trivial and 1 minor potion, chosen when they're used. The name is the touchstone. One time only, you can have 1 major potion."}, {"n": "Homely Hovel", "t": "Given time, you can bless a homestead to overflow with power. You get outside help on all rolls while on its grounds. Choose two wondrous traits to give it such as: traveling—ritual anchor—healing—caretaker. You can only have one homestead like this at a time."}, {"n": "Soothsayer", "t": "Once per session, you can tag a spirit in the local area. They offer a 3d Spirit pool rolled as bonus dice when you or an ally invokes their domain. They may ask for aid in return. Spirit domains include things such as: rivers—the night sky—art—furry critters."}, {"n": "Wonder Magnet", "t": "You can cause wild surges when spellcasting, as the magical twist in Sorcery. When it triggers, make a 3d story roll for the results. On a perfect, take spark. When strange things happen, they happen to you."}], "track": [{"n": "Minor Potion", "kind": "pips", "max": 1}, {"n": "Major Potion", "kind": "pips", "max": 1}, {"n": "Spirit", "kind": "pool", "d": 3}]}, "Wizard": {"core": {"n": "Spellcraft", "t": "You have spellcasting ability. You roll Wits to cast and the spell theorem you are casting serves as its touchstone. Each session, you can cast 4 spells and 2 potent spells. You choose which spell theorem to use when you cast, interpreting it as you see fit. Spells cast with no risk require no roll and don't count against your limited number per session, unless potent.\nYou begin with 5 spell theorems and can freely learn new ones from studying and experimenting with scrolls, consuming them.\n[Growth: At level 2, 4 and 6, gain +1 spell and potent spell per session, +1 spell theorem.]"}, "paths": [{"n": "Alchemist", "t": "Each session, you have a 4d Potions resource pool. You can have a trivial potion and roll the pool, or drop 1 and roll for a minor potion. You know recipes for your spell theorems, plus two more. Learn new recipes by sacrificing potions."}, {"n": "Archivist", "t": "You gain 2 minor, and 1 major arcana that you've either found or created. When you roll an arcana's power pool, you drop 1 fewer die unless it's the last."}, {"n": "Component Pouch", "t": "Each session, you have a 2d Components pool to help focus your magic. When you get a messy or grim on spellcasting, you can roll the pool to increase a die result by 1 (3→4). Describe what reagent helped."}, {"n": "Colleagues", "t": "In every city, some towns, and the occasional dungeon, you can find a powerful, eccentric wizardly colleague who owes you a favor—or maybe you owe them one. If you go out of your way to meet and catch up, take spark, and they may trade theorem research with you."}, {"n": "Countermagic", "t": "Each session, you have a 2d power pool you can use to interrupt hostile magic. On a perfect, you can turn the magic back on the source."}, {"n": "Mastered Theorem", "t": "Choose one of your spell theorems. You take +1d when casting it and gain 1 extra potent spell casting of it per session. Your name becomes linked to it, and it begins to spread in popularity throughout wizardry—track it with campaign pools."}, {"n": "Specialty School", "t": "Choose the arcane school of your focus. All of your spell theorems now have it plus another school. When casting, choose which school to use. When you get a critical with this arcane school, take spark."}], "track": [{"n": "Spells", "kind": "pips", "max": 4}, {"n": "Potent", "kind": "pips", "max": 2}, {"n": "Potions", "kind": "pool", "d": 4}, {"n": "Components", "kind": "pool", "d": 2}]}};
+const CRUCIBLES={"Arcane": ["adapt", "curiosity", "unstable", "mind", "water", "rune", "plane", "memory", "bubble", "ethereal", "phase", "emotion", "force", "scribe", "blink", "focus", "hand", "explosion", "flame", "echo", "rift", "acid", "word", "float", "identity", "lore", "attune", "dazzle", "thought", "sight", "phantom", "vortex", "vanish", "air", "gate", "color"], "Divine": ["soothe", "melody", "eternal", "plague", "justice", "heal", "life", "bind", "sun", "shield", "vigor", "halo", "luck", "truth", "sentinel", "rainbow", "moon", "spirit", "virtue", "sacrifice", "wrath", "purify", "pierce", "dead", "blood", "stars", "light", "blind", "reflect", "fate", "beauty", "ward", "bravery", "sorrow", "renew", "radiant"], "Eldritch": ["shred", "lock", "warp", "scream", "tendril", "mask", "charm", "shift", "skull", "trick", "figment", "darkness", "bind", "false", "cold", "void", "enthrall", "chain", "impulse", "curse", "shadow", "steal", "whisper", "drain", "dream", "sick", "confuse", "desire", "eye", "shroud", "face", "grasp", "flesh", "silence", "madness", "lurk"], "Primal": ["lush", "claw", "grow", "breeze", "shell", "ember", "storm", "stone", "rot", "stone", "thorn", "blight", "river", "fragrant", "frenzy", "howl", "freeze", "beast", "thunder", "horn", "flight", "tail", "lightning", "spore", "poison", "swarm", "root", "bloom", "earth", "death", "wither", "rain", "bone", "sting", "tree", "seed"]};
+const FUNCTIONS=["Attack", "Enhance", "Hinder", "Influence", "Protect", "Restore", "Reveal", "Summon", "Transform", "Traverse"];
+const TRACKS={"Adventurer": {}, "Artificer": {"core": [], "Animate Objects": [{"n": "Animated", "kind": "pool", "d": 2}], "Grenades": [{"n": "Grenades", "kind": "pool", "d": 3}], "Magnum Opus": [{"n": "Magnum Opus", "kind": "pool", "d": 6}], "Mischief Maker": [{"n": "Mischief", "kind": "pips", "max": 3}], "Wandslinger": [{"n": "Wandslinger use", "kind": "pips", "max": 1}]}, "Bard": {"core": [{"n": "Inspiration", "kind": "pips", "max": 6}], "Bardic Lore": [{"n": "Bardic thread", "kind": "pips", "max": 1}], "Jack of All Trades": [{"n": "Jack", "kind": "pool", "d": 3}], "Wordplay": [{"n": "Wordplay use", "kind": "pips", "max": 1}]}, "Berserker": {"core": [{"n": "Frenzy", "kind": "pips", "max": 3}], "Flesh Wounds": [{"n": "Wounds", "kind": "pips", "max": 3}], "Warcry": [{"n": "Warcry", "kind": "pips", "max": 2}]}, "Cleric": {"core": [{"n": "Major Rite", "kind": "pool", "d": 6}, {"n": "Minor Rite", "kind": "pool", "d": 4}, {"n": "Minor Rite", "kind": "pool", "d": 4}], "Blessed": [{"n": "Blessed use", "kind": "pips", "max": 1}], "Iron Will": [{"n": "Iron Will", "kind": "pool", "d": 2}]}, "Druid": {"core": [{"n": "Wild Shape", "kind": "pool", "d": 2}], "Augury": [{"n": "Omens", "kind": "pips", "max": 2}], "Primordial Bonds": [{"n": "Element charge", "kind": "pips", "max": 4}], "Primal Growth": [{"n": "Primal Growth use", "kind": "pips", "max": 1}], "Windcaller": [{"n": "Windcaller use", "kind": "pips", "max": 1}]}, "Fighter": {"core": [{"n": "Mastery", "kind": "pips", "max": 4}], "Arcane Training": [{"n": "Potent spell", "kind": "pips", "max": 1}], "Bulwark": [{"n": "Bulwark", "kind": "pool", "d": 2}], "Control": [{"n": "Control use", "kind": "pips", "max": 1}], "Got Your Back": [{"n": "Got Your Back use", "kind": "pips", "max": 1}], "Tactician": [{"n": "Tactician use", "kind": "pips", "max": 1}]}, "Monk": {"core": [{"n": "Flow", "kind": "pips", "max": 4}, {"n": "Interrupt", "kind": "pips", "max": 3}]}, "Paladin": {"core": [{"n": "Smite", "kind": "pips", "max": 6}, {"n": "Tenets in violation", "kind": "pips", "max": 3}], "Challenge": [{"n": "Challenge use", "kind": "pips", "max": 1}], "Divine Blessing": [{"n": "Divine Rite", "kind": "pool", "d": 4}]}, "Psion": {"core": [{"n": "Instability slots", "kind": "pips", "max": 6}], "Echo": [{"n": "Echo", "kind": "pool", "d": 3}], "Foresight": [{"n": "Foresight use", "kind": "pips", "max": 1}], "Reader": [{"n": "Reader thread", "kind": "pips", "max": 1}], "Tumultuous Mind": [{"n": "Tumult. vex", "kind": "pips", "max": 1}], "Shift Form": [{"n": "Shifter", "kind": "pool", "d": 2}]}, "Ranger": {"core": [{"n": "Quarry", "kind": "pips", "max": 2}], "Animal Companion": [{"n": "Companion mark", "kind": "pips", "max": 1}, {"n": "Companion hurt", "kind": "pips", "max": 1}], "Scout Ahead": [{"n": "Scout thread", "kind": "pips", "max": 1}]}, "Rogue": {"core": [{"n": "Competence", "kind": "pool", "d": 4}], "According to Plan": [{"n": "Plan thread", "kind": "pips", "max": 1}], "Poisoner": [{"n": "Poisons", "kind": "pool", "d": 4}], "Weasel": [{"n": "Weasel use", "kind": "pips", "max": 1}]}, "Sorcerer": {"core": [], "Metamagic": [{"n": "Metamagic", "kind": "pips", "max": 2}], "Spelleater": [{"n": "Spelleater", "kind": "pool", "d": 2}], "Wisps": [{"n": "Wisps", "kind": "pips", "max": 2}]}, "Summoner": {"core": [{"n": "Vassal", "kind": "pool", "d": 4}, {"n": "Vassal mark", "kind": "pips", "max": 1}, {"n": "Vassal harm", "kind": "pips", "max": 1}], "Fierce Protector": [{"n": "Protector use", "kind": "pips", "max": 1}], "Ley Magic": [{"n": "Ley Magic use", "kind": "pips", "max": 1}]}, "Swashbuckler": {"core": [{"n": "Panache", "kind": "pips", "max": 6}, {"n": "Quick Wit interrupt", "kind": "pips", "max": 1}], "Improvise": [{"n": "Improvise use", "kind": "pips", "max": 1}], "Lucky": [{"n": "Luck", "kind": "pool", "d": 1}], "Provoke": [{"n": "Provoke use", "kind": "pips", "max": 1}]}, "Warlock": {"core": [{"n": "Patience", "kind": "pool", "d": 8}], "Affliction": [{"n": "Affliction use", "kind": "pips", "max": 1}]}, "Witch": {"core": [{"n": "Words of Power", "kind": "pips", "max": 6}], "Herbalism": [{"n": "Minor potion", "kind": "pips", "max": 1}, {"n": "Major potion", "kind": "pips", "max": 1}], "Soothsayer": [{"n": "Spirit", "kind": "pool", "d": 3}]}, "Wizard": {"core": [{"n": "Spells", "kind": "pips", "max": 4}, {"n": "Potent spells", "kind": "pips", "max": 2}], "Alchemist": [{"n": "Potions", "kind": "pool", "d": 4}], "Component Pouch": [{"n": "Components", "kind": "pool", "d": 2}], "Countermagic": [{"n": "Countermagic", "kind": "pool", "d": 2}], "Mastered Theorem": [{"n": "Mastered use", "kind": "pips", "max": 1}]}};
+const MORE_CRUCIBLES=[{"id": "theorem", "name": "Spell Theorem", "mode": "theorem", "note": "Roll 1 of each; choose 2 words for the theorem name, then add a school.", "schools": ["Abjuration", "Conjuration", "Divination", "Enchantment", "Evocation", "Illusion", "Necromancy", "Transmutation"], "tables": [{"name": "Style", "words": ["binding", "soothing", "grasping", "shielding", "curious", "shadowy", "flaming", "slow", "dire", "petrifying", "ethereal", "majestic", "alluring", "silent", "dazzling", "piercing", "sense", "frenzied", "cryptic", "withering", "primal", "toxic", "thunderous", "prismatic", "freezing", "shredding", "false", "harmonic", "molten", "wild", "mesmerizing", "unseen", "expanding", "swift", "phantom", "whispering"]}, {"name": "Essence", "words": ["oil", "earth", "lore", "spirit", "ash", "barb", "crystal", "air", "fire", "lightning", "acid", "memory", "slime", "spore", "shroud", "stasis", "sound", "water", "light", "star", "trick", "siphon", "thought", "rift", "gravity", "smoke", "sight", "mist", "bloom", "poison", "echo", "death", "bone", "mirror", "emotion", "growth"]}, {"name": "Form", "words": ["beacon", "servant", "vision", "sentinel", "ray", "spray", "ring", "crown", "bond", "shift", "guide", "embers", "chains", "word", "step", "gate", "wall", "bolt", "eye", "aura", "gust", "tendril", "wings", "wave", "lock", "shield", "swarm", "pillar", "claw", "dream", "bubble", "hand", "dance", "explosion", "anchor", "field"]}]}, {"id": "surge", "name": "Wild Surge", "mode": "smash", "note": "Roll 1 on each table, smash them together, and interpret.", "tables": [{"name": "Table A", "words": ["skin", "temperature", "icy", "smoke", "rain", "lightning", "gust", "sparks", "rattle", "tremor", "color", "scent", "ground", "fire", "water", "light", "debris", "flicker", "creatures", "growth", "boom", "effect", "steps", "levitation", "cloud", "invisibility", "gloom", "distortion", "metal", "eye", "shadow", "clock", "twist", "laughter", "breath", "hum"]}, {"name": "Table B", "words": ["birds", "whispers", "glowing", "illusion", "rapid", "whirlwind", "smell", "static", "hunger", "image", "emotion", "glimmer", "lifted", "change", "phrase", "shock", "sound", "echo", "shattering", "scatter", "feeling", "pop", "brief", "shimmer", "shift", "size", "surface", "agitation", "apparition", "sparkle", "notes", "vision", "voice", "mark", "glow", "dazzle"]}]}, {"id": "words", "name": "Witch — Words of Power", "mode": "pick2", "note": "Cast using any 2 words of power as touchstones. You begin with 6.", "tables": [{"name": "Words of Power", "words": ["spirit", "grace", "wither", "path", "star", "color", "wall", "sleep", "fire", "gate", "storm", "wind", "absorb", "pain", "adapt", "break", "dream", "sun", "ward", "luck", "shape", "reduce", "compel", "silence", "might", "vigor", "vex", "open", "obscure", "cloud", "blood", "grave", "time", "move", "ask", "ice", "read", "puzzle", "call", "lost", "plant", "life", "reveal", "guide", "shackle", "bind", "sea", "hunt", "secret", "stone", "trick", "voice", "growth", "travel", "message", "fable", "speak", "kindred", "weather", "beast", "memory", "know", "aid", "sanctum", "food", "instinct", "light", "truth", "rebuke", "blend", "bird", "poison"]}]}, {"id": "herb", "name": "Herbalism", "mode": "join", "note": "Roll a descriptor + a part to name an herb (the touchstone).", "credit": "Herbalism crucible by Juniper Bloom, used with permission.", "tables": [{"name": "Descriptor", "words": ["choke", "star", "sun", "dream", "mist", "zap", "sticky", "stone", "moon", "feather", "soot", "blast", "wool", "dust", "devil", "wild", "freeze", "blood", "smoke", "snake", "honey", "mirror", "sting", "ink", "shriek", "mimic", "goat", "worm", "steel", "skunk", "giggle", "needle", "night", "swell", "faerie", "dragon"]}, {"name": "Part", "words": ["cap", "lily", "thistle", "pod", "stem", "petal", "wort", "reed", "bell", "bud", "shoot", "bean", "rose", "flower", "leaf", "tongue", "bark", "tuber", "bush", "root", "wood", "berry", "funnel", "vine", "shroom", "spine", "grass", "lace", "moss", "seed", "sprout", "shade", "thorn", "bane", "branch", "weed"]}]}, {"id": "rites", "name": "Cleric — Rites", "mode": "join", "note": "Create your god (name + title), 3 tenets, and a domain. Choose 1 major + 2 minor rites. Roll for inspiration:", "tables": [{"name": "Domain", "words": ["Storms", "Justice", "Life", "Death", "Magic", "Nature", "Mercy", "Trickery", "Radiance", "Travel", "Hunt", "Luck", "Revelry", "Sea", "Moon", "War", "Knowledge", "Crafting"]}, {"name": "Rite", "words": ["Blessing", "Divination", "Dominion", "Healing", "Warding", "Wrath"]}], "ref": [{"t": "Blessing", "d": "Bless a warhammer. Walk on water. Fill a heart with hope."}, {"t": "Divination", "d": "Find a safe path. Reveal where the thief hides. Know tomorrow's weather."}, {"t": "Dominion", "d": "Convince someone to help. Make someone forget. Calm an angry mob."}, {"t": "Healing", "d": "Heal a broken bone. Relieve stress. Stop the bleeding."}, {"t": "Warding", "d": "Shield an ally from harm. Block a doorway. Create sentries."}, {"t": "Wrath", "d": "Shatter a foe's weapon. Blind a traitor. Curse a heretic with misfortune."}]}, {"id": "wildtalents", "name": "Druid — Wild Talents", "mode": "pick2", "note": "Roll druidic tells for a shifted form's look. Drop 1d before rolling for each wild talent when you shift. Example beasts & their talents below.", "tables": [{"name": "Druidic Tells", "words": ["thorns", "blossoming", "feathered", "bristled", "roots", "fluffy", "moss", "bark", "earthen", "hoofed", "vibrant", "silken", "vines", "glowing", "translucent", "tangled", "crystalline", "smoky", "tusked", "velvet", "murky", "speckled", "verdant", "willowy", "shimmering", "antlered", "ashen", "spiny", "gnarled", "fragrant", "scaly", "longtoothed", "dewy", "breezy", "misty", "petals"]}], "ref": [{"t": "Chimpanzee", "d": "Relentless"}, {"t": "Wolf", "d": "Keen Senses"}, {"t": "Spider", "d": "Wall climbing"}, {"t": "Lion", "d": "Fearsome"}, {"t": "Rabbit", "d": "Lucky"}, {"t": "Turtle", "d": "Bulwark"}, {"t": "Fox", "d": "Lurker"}, {"t": "Octopus", "d": "Shape & color mimicking"}, {"t": "Shark", "d": "Aquatic"}, {"t": "Cheetah", "d": "Incredible sprinting"}, {"t": "Ape", "d": "Mighty"}, {"t": "Bear", "d": "Flesh Wounds"}, {"t": "Honey Badger", "d": "Iron Will"}, {"t": "Eagle", "d": "Flight"}, {"t": "Rhino", "d": "Bigger than a bear"}, {"t": "Snake", "d": "Poisoner"}]}, {"id": "maneuvers", "name": "Combat Maneuvers", "mode": "pick1", "note": "Flavor combat — don't just swing. Use mastery for setups & secondary effects to change the fight, not just to kill. Anyone can try these; a fighter masters them.", "tables": [{"name": "Maneuvers", "words": ["Blind", "Disarm", "Knockdown", "Pin down", "Pull", "Push", "Sunder", "Unnerve"]}], "ref": [{"t": "Blind", "d": "Cloud their vision to leave them vulnerable."}, {"t": "Disarm", "d": "Take their weapon to stop their advance."}, {"t": "Knockdown", "d": "Put them on the ground to gain the upper hand."}, {"t": "Pin down", "d": "Trap them so they can't act or escape."}, {"t": "Pull", "d": "Drag them into danger or out of position."}, {"t": "Push", "d": "Shove them away to protect allies or disrupt their lines."}, {"t": "Sunder", "d": "Break their gear to limit their options."}, {"t": "Unnerve", "d": "Leave them shaken and questioning their choices."}]}];
+
+</script>
+<script>
+"use strict";
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const KEY="grimwild.char.v2";
+const CLASSES=Object.keys(CLASSES_DATA);
+const STATS=[["BRA","Brawn","phys"],["AGI","Agility","phys"],["WIT","Wits","ment"],["PRE","Presence","ment"]];
+const XP_ROWS=[2,3,4,5,6,7], BOND_ROWS=4;
+
+function blank(){return{
+  name:"",cls:"Adventurer",player:"",features:"",weapon:"",bg:"",
+  traitsAre:"",traitsNot:"",desireWant:"",desireNot:"",
+  stats:{BRA:1,AGI:1,WIT:1,PRE:1}, marks:{BRA:false,AGI:false,WIT:false,PRE:false},
+  harm:{bloodied:false,rattled:false,desperate:false,dead:false},
+  conds:[{d:"",name:""},{d:"",name:""}],
+  spark:0, thread:2, xp:0,
+  bonds:[{pc:"",bond:""},{pc:"",bond:""},{pc:"",bond:""},{pc:"",bond:""}],
+  taken:{}, trackers:[], arcana:[], items:[], grimoire:[], hideUntaken:false
+};}
+let C=load();
+function load(){try{const s=localStorage.getItem(KEY);if(s)return Object.assign(blank(),JSON.parse(s));}catch(e){}return blank();}
+let sT;function save(){clearTimeout(sT);sT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(C));}catch(e){}try{cloudPush();}catch(e){}},250);}
+
+/* ---------- SHEET ---------- */
+function buildStatic(){
+  const sel=$("#clsSel");sel.innerHTML="";CLASSES.forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=c;sel.appendChild(o);});
+  $$("[data-k]").forEach(el=>{const k=el.dataset.k;if(C[k]!==undefined)el.value=C[k];
+    el.addEventListener("input",()=>{C[k]=el.value;save();if(k==="name"||k==="cls")refreshHeader();if(k==="cls")buildTalents();});});
+}
+function refreshHeader(){$("#tbName").textContent=(C.name||"New character")+(C.cls?" · "+C.cls:"");}
+
+function statThorns(code){let t=0;if(C.marks[code])t++;
+  const phys=(code==="BRA"||code==="AGI");
+  if(phys&&C.harm.bloodied)t++; if(!phys&&C.harm.rattled)t++; if(C.harm.desperate)t++; return t;}
+
+function buildStats(){
+  const row=$("#statRow");row.innerHTML="";
+  STATS.forEach(([code,label,kind])=>{
+    const t=statThorns(code);
+    const d=document.createElement("div");d.className="statcell "+kind;
+    d.innerHTML=`<div class="nm">${label.toUpperCase()}</div>
+      <input class="v" inputmode="numeric" value="${C.stats[code]}">
+      ${t?`<div class="tbadge">+${t}t</div>`:""}
+      <div class="mk${C.marks[code]?" on":""}" role="button" aria-label="mark ${label}"></div>
+      <button class="rb">Roll</button>`;
+    const v=d.querySelector(".v");
+    v.addEventListener("input",()=>{let n=parseInt(v.value)||0;n=Math.max(0,Math.min(6,n));C.stats[code]=n;save();});
+    d.querySelector(".mk").addEventListener("click",()=>{C.marks[code]=!C.marks[code];save();buildStats();});
+    d.querySelector(".rb").addEventListener("click",()=>{setDice(C.stats[code]||1);setThorn(statThorns(code));go("roll");});
+    row.appendChild(d);
+  });
+  buildHarm();
+}
+function buildHarm(){
+  const H=C.harm;
+  const node=(x,y,w,active,label,key)=>{
+    const half=w/2;
+    return `<g class="node" data-h="${key}">
+      <polygon points="${x},${y-half} ${x+half},${y} ${x},${y+half} ${x-half},${y}"
+        fill="${active?'#b23a2e':'#0f0d0a'}" stroke="${active?'#b23a2e':'#a9761f'}" stroke-width="2"/>
+      <text x="${x}" y="${y+half+13}" text-anchor="middle" font-size="10" fill="${active?'#d98f82':'#b8ad99'}">${label}</text></g>`;
+  };
+  const L=(x1,y1,x2,y2)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#3a3128" stroke-width="2"/>`;
+  const svg=`<svg class="harmsvg" viewBox="0 0 300 170" xmlns="http://www.w3.org/2000/svg">
+    ${L(75,4,75,40)}${L(225,4,225,40)}
+    ${L(75,52,150,86)}${L(225,52,150,86)}${L(150,98,150,124)}
+    ${node(75,46,30,H.bloodied,'BLOODIED','bloodied')}
+    ${node(225,46,30,H.rattled,'RATTLED','rattled')}
+    ${node(150,92,30,H.desperate,'DESPERATE','desperate')}
+    ${node(150,136,30,H.dead,'DEAD','dead')}
+    <text x="75" y="164" text-anchor="middle" font-size="8" fill="#867c6c">Brawn · Agility</text>
+    <text x="225" y="164" text-anchor="middle" font-size="8" fill="#867c6c">Wits · Presence</text>
+  </svg>`;
+  const wrap=$("#harmWrap");wrap.innerHTML=svg;
+  $$(".harmsvg .node").forEach(g=>g.addEventListener("click",()=>{const k=g.dataset.h;C.harm[k]=!C.harm[k];save();buildStats();}));
+}
+
+function buildConds(){
+  const host=$("#condList");host.innerHTML="";
+  C.conds.forEach((c,i)=>{
+    const row=document.createElement("div");row.className="cond";
+    row.innerHTML=`<input class="dd" placeholder="Nd" value="${esc(c.d)}">
+      <input class="cn" placeholder="condition" value="${esc(c.name)}">
+      <button class="icon-btn" title="roll pool">🎲</button>
+      <button class="icon-btn" title="remove">✕</button>`;
+    const [dd,cn]=row.querySelectorAll("input");
+    dd.addEventListener("input",()=>{C.conds[i].d=dd.value;save();});
+    cn.addEventListener("input",()=>{C.conds[i].name=cn.value;save();});
+    const [rollB,delB]=row.querySelectorAll(".icon-btn");
+    rollB.addEventListener("click",()=>rollConditionPool(i,dd));
+    delB.addEventListener("click",()=>{C.conds.splice(i,1);save();buildConds();});
+    host.appendChild(row);
+  });
+}
+function rollConditionPool(i,dd){
+  const n=parseInt((C.conds[i].d||"").replace(/[^0-9]/g,""))||0;
+  if(n<=0){alert("Give this condition a die pool first, e.g. 4d");return;}
+  const rolled=[];let kept=0;for(let k=0;k<n;k++){const v=rint(6);rolled.push(v);if(v>=4)kept++;}
+  C.conds[i].d=kept+"d";dd.value=kept+"d";save();
+  addLog("pool",`${C.conds[i].name||"condition"} ${n}d → ${kept}d [${rolled.join(",")}]`);
+  flash(dd, kept===0?"cleared!":kept+"d left");
+}
+function flash(el,msg){const o=el.style.background;el.style.background="var(--gold-deep)";setTimeout(()=>el.style.background=o,350);}
+
+function esc(s){return (s==null?"":String(s)).replace(/"/g,"&quot;");}
+
+function buildBondsXp(){
+  const br=$("#bondRows");br.innerHTML="";
+  if(!C.bonds)C.bonds=Array(BOND_ROWS).fill(null).map(()=>({pc:"",bond:""}));
+  C.bonds.forEach((b,i)=>{const row=document.createElement("div");row.className="bond";
+    row.innerHTML=`<input class="inp" placeholder="PC" value="${esc(b.pc)}"><input class="inp" placeholder="Bond" value="${esc(b.bond)}">`;
+    const [pc,bo]=row.querySelectorAll("input");
+    pc.addEventListener("input",()=>{C.bonds[i].pc=pc.value;save();});
+    bo.addEventListener("input",()=>{C.bonds[i].bond=bo.value;save();});
+    br.appendChild(row);});
+  const xg=$("#xpGrid");xg.innerHTML="";let idx=0;
+  XP_ROWS.forEach(n=>{const r=document.createElement("div");r.className="xprow";
+    for(let k=0;k<n;k++){const my=++idx;const b=document.createElement("div");b.className="xp"+(my<=C.xp?" on":"");
+      b.addEventListener("click",()=>{C.xp=(C.xp===my?my-1:my);save();buildBondsXp();});r.appendChild(b);}
+    xg.appendChild(r);});
+}
+
+/* spark / thread */
+function renderSpark(){
+  pipRow($("#sparkPips"),2,C.spark,v=>{C.spark=v;save();renderSpark();},false);
+  pipRow($("#threadPips"),4,C.thread,v=>{C.thread=v;save();renderSpark();},true);
+  const mini=$("#sparkMini");mini.innerHTML="Spark ";for(let i=1;i<=2;i++){const p=document.createElement("span");p.className="pip"+(i<=C.spark?" on":"");mini.appendChild(p);}
+  const rs=$("#rollSpark");if(rs){rs.innerHTML="";for(let i=1;i<=2;i++){const b=document.createElement("div");b.className="box"+(i<=C.spark?" on":"");rs.appendChild(b);}}
+  const b=$("#spendSpark");if(b){b.disabled=C.spark<=0;b.style.opacity=C.spark<=0?.4:1;}
+}
+function pipRow(host,max,val,onSet,thread){if(!host)return;host.innerHTML="";for(let i=1;i<=max;i++){const b=document.createElement("div");b.className="box"+(thread?" thread":"")+(i<=val?" on":"");b.addEventListener("click",()=>onSet(val===i?i-1:i));host.appendChild(b);}}
+
+/* ---------- TALENTS ---------- */
+const GLOSS=/(\b(?:push yourself|take spark|potent spell|potent feats?|montage rolls?|story rolls?|defense rolls?|power pool|magical twist|bloodied|rattled|desperate|interrupt|suspense|spotlight|critical|tangle|dropped|potent|assist|setup|spark|thread|marks?|vex)\b|\b\d+d\b)/gi;
+function escName(s){return (s==null?"":String(s)).replace(/</g,"&lt;");}
+function boldify(txt){return escName(txt).replace(GLOSS,m=>"<b>"+m+"</b>");}
+
+function talentEl(className,p){
+  const key=className+":"+p.n, taken=!!C.taken[key];
+  const d=document.createElement("details");d.className="talent";
+  d.innerHTML=`<summary><span class="tk${taken?" on":""}" role="button" aria-label="taken"></span><span class="tn">${escName(p.n)}</span><span class="chev">▸</span></summary><div class="tt">${boldify(p.t)}</div>`;
+  const tk=d.querySelector(".tk");
+  tk.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();
+    C.taken[key]=!C.taken[key];tk.classList.toggle("on");save();
+    rebuildAutoTrackers();buildTrackers();renderOtherTaken();
+    if(className===C.cls&&C.hideUntaken)buildTalents();});
+  return d;
+}
+function buildTalents(){
+  const data=CLASSES_DATA[C.cls]||CLASSES_DATA.Adventurer;
+  $("#coreTitle").textContent="Core Talent — "+C.cls;
+  $("#coreBody").innerHTML=`<span class="cn">${escName(data.core.n)}:</span> ${boldify(data.core.t)}`;
+  const pl=$("#pathList");pl.innerHTML="";
+  const tog=$("#togTaken");if(tog)tog.textContent=C.hideUntaken?"Show all":"Taken only";
+  const shown=C.hideUntaken?data.paths.filter(p=>C.taken[C.cls+":"+p.n]):data.paths;
+  if(!data.paths.length)pl.innerHTML=`<div class="tip" style="margin-top:0">Adventurers keep their core talent and take talents from any path — use the “other paths” browser below. Trackers appear automatically as you take them.</div>`;
+  else if(!shown.length)pl.innerHTML=`<div class="tip" style="margin-top:0">No path talents taken yet. Tap the circle on a talent to mark it taken, or switch to “Show all”.</div>`;
+  shown.forEach(p=>pl.appendChild(talentEl(C.cls,p)));
+  buildOtherPaths();
+  rebuildAutoTrackers();
+  buildTrackers();
+}
+function buildOtherPaths(){
+  const sel=$("#otherCls");
+  if(!sel.dataset.init){CLASSES.forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=c;sel.appendChild(o);});
+    sel.value=CLASSES.find(c=>c!==C.cls)||C.cls; sel.addEventListener("change",renderOtherList); sel.dataset.init="1";}
+  renderOtherTaken();renderOtherList();
+}
+function renderOtherList(){
+  const cls=$("#otherCls").value, data=CLASSES_DATA[cls], host=$("#otherList");host.innerHTML="";
+  if(!data.paths.length){host.innerHTML=`<div class="tip">${cls} has no path talents to browse.</div>`;return;}
+  data.paths.forEach(p=>host.appendChild(talentEl(cls,p)));
+}
+function renderOtherTaken(){
+  const host=$("#otherTaken"),card=$("#otherTakenCard");if(!host)return;host.innerHTML="";
+  const taken=Object.keys(C.taken).filter(k=>C.taken[k]&&k.split(":")[0]!==C.cls);
+  if(card)card.style.display=taken.length?"":"none";
+  if(!taken.length)return;
+  taken.forEach(k=>{const p=k.split(":");const cls=p[0],name=p.slice(1).join(":");
+    const data=CLASSES_DATA[cls];const pt=data&&data.paths.find(x=>x.n===name);
+    if(pt){const el=talentEl(cls,pt);el.querySelector(".tn").innerHTML=`${escName(name)} <span style="color:var(--muted);font-size:11px">· ${escName(cls)}</span>`;host.appendChild(el);}
+  });
+}
+
+/* trackers: auto (core + taken talents) + custom */
+function srcLabel(src){return src.endsWith(":core")?"core":src.split(":").slice(1).join(":");}
+function autoDefs(){
+  const defs=[];const push=(src,arr)=>{(arr||[]).forEach((d,i)=>defs.push({id:src+"#"+i,src,def:d}));};
+  push(C.cls+":core",(TRACKS[C.cls]||{}).core);
+  Object.keys(C.taken).forEach(key=>{if(!C.taken[key])return;const p=key.split(":");const name=p.slice(1).join(":");
+    push(key,(TRACKS[p[0]]||{})[name]);});
+  return defs;
+}
+function rebuildAutoTrackers(){
+  const defs=autoDefs(),byId={};
+  C.trackers.forEach(t=>{if(t.auto&&t.id)byId[t.id]=t;});
+  const autos=defs.map(({id,src,def})=>{const ex=byId[id];
+    const b={id,auto:true,src:srcLabel(src),name:def.n,kind:def.kind};
+    if(def.kind==="pool"){b.dmax=def.d;b.d=ex?ex.d:def.d;}else{b.max=def.max;b.val=ex?ex.val:0;}
+    return b;});
+  C.trackers=autos.concat(C.trackers.filter(t=>!t.auto));save();
+}
+function addTracker(name,kind,size){
+  if(!name.trim())return;
+  const t={id:"custom"+Date.now(),auto:false,name:name.trim(),kind};
+  if(kind==="pool"){t.dmax=size;t.d=size;}else{t.max=size;t.val=0;}
+  C.trackers.push(t);save();buildTrackers();
+}
+function buildTrackers(){
+  const host=$("#trkList");host.innerHTML="";
+  if(!C.trackers.length){host.innerHTML=`<div class="tip" style="margin:0">No trackers yet — they appear as you take talents, or add your own.</div>`;return;}
+  C.trackers.forEach((t,i)=>{
+    const row=document.createElement("div");row.className="trk";
+    const name=document.createElement("div");name.className="tname";
+    name.innerHTML=`${esc(t.name)}<small>${t.auto?esc(t.src):(t.kind==="pool"?"pool":"boxes")}</small>`;
+    row.appendChild(name);
+    if(t.kind==="pool"){
+      const ctl=document.createElement("div");ctl.className="poolctl";
+      ctl.innerHTML=`<button>−</button><div class="pc">${t.d}d</div><button>+</button><button title="roll" style="margin-left:6px;border-radius:8px">🎲</button><button title="reset" style="border-radius:8px">↻</button>`;
+      const bs=ctl.querySelectorAll("button");
+      bs[0].addEventListener("click",()=>{t.d=Math.max(0,t.d-1);save();buildTrackers();});
+      bs[1].addEventListener("click",()=>{t.d=Math.min(12,t.d+1);save();buildTrackers();});
+      bs[2].addEventListener("click",()=>{const n=t.d;if(n<=0)return;const r=[];let k=0;for(let x=0;x<n;x++){const v=rint(6);r.push(v);if(v>=4)k++;}t.d=k;save();buildTrackers();addLog("pool",`${t.name} ${n}d → ${k}d [${r.join(",")}]`);});
+      bs[3].addEventListener("click",()=>{t.d=t.dmax;save();buildTrackers();});
+      row.appendChild(ctl);
+    } else {
+      const pr=document.createElement("div");pr.className="piprow";
+      for(let n=1;n<=t.max;n++){const b=document.createElement("div");b.className="box"+(n<=t.val?" on":"");b.addEventListener("click",()=>{t.val=(t.val===n?n-1:n);save();buildTrackers();});pr.appendChild(b);}
+      row.appendChild(pr);
+    }
+    if(!t.auto){const del=document.createElement("button");del.className="del";del.textContent="✕";
+      del.addEventListener("click",()=>{C.trackers.splice(i,1);save();buildTrackers();});row.appendChild(del);}
+    else{const sp=document.createElement("span");sp.style.cssText="width:22px;flex:0 0 auto";row.appendChild(sp);}
+    host.appendChild(row);
+  });
+}
+$("#trkAdd").addEventListener("click",()=>{const n=$("#trkName").value;const k=$("#trkKind").value;const s=parseInt($("#trkSize").value)||3;addTracker(n,k,s);$("#trkName").value="";});
+$("#togTaken").addEventListener("click",()=>{C.hideUntaken=!C.hideUntaken;save();buildTalents();});
+$("#addCond").addEventListener("click",()=>{C.conds.push({d:"",name:""});save();buildConds();});
+
+/* ---------- NAV ---------- */
+function go(v){$$(".view").forEach(x=>x.classList.remove("active"));$("#view-"+v).classList.add("active");
+  $$(".nav button").forEach(b=>b.classList.toggle("on",b.dataset.view===v));try{window.scrollTo(0,0);}catch(e){}}
+$$(".nav button").forEach(b=>b.addEventListener("click",()=>go(b.dataset.view)));
+
+/* ---------- ROLLER ---------- */
+let mode="action",dice=2,thorn=0,pool=4;
+function setDice(n){dice=Math.max(0,Math.min(10,n));$("#cDice").textContent=dice;}
+function setThorn(n){thorn=Math.max(0,Math.min(8,n));$("#cThorn").textContent=thorn;}
+$("#modeSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;mode=b.dataset.mode;
+  $$("#modeSeg button").forEach(x=>x.classList.toggle("on",x===b));
+  $("#actionCtl").style.display=mode==="action"?"block":"none";$("#poolCtl").style.display=mode==="pool"?"block":"none";});
+$$(".stepctl button").forEach(btn=>btn.addEventListener("click",()=>{const d=+btn.dataset.d,t=btn.dataset.step;
+  if(t==="dice")setDice(dice+d);else if(t==="thorn")setThorn(thorn+d);else if(t==="pool"){pool=Math.max(0,Math.min(12,pool+d));$("#cPool").textContent=pool;}}));
+const rint=n=>Math.floor(Math.random()*n)+1;
+$("#rollBtn").addEventListener("click",()=>mode==="action"?rollAction():rollPool());
+$("#spendSpark").addEventListener("click",()=>{if(C.spark<=0)return;C.spark--;setDice(dice+1);save();renderSpark();});
+
+function rollAction(){
+  const n=dice;let sixes=0,highest=0,d6=[];let count=Math.max(n,1);const zero=(n===0);if(zero)count=2;
+  for(let i=0;i<count;i++){const v=rint(6);d6.push(v);if(v>highest)highest=v;if(v===6)sixes++;}
+  if(zero){highest=Math.min(d6[0],d6[1]);sixes=0;}
+  const d8=[];let cuts=0;for(let i=0;i<thorn;i++){const v=rint(8);d8.push(v);if(v>=7)cuts++;}
+  const crit=!zero&&sixes>=2;let level=highest===6?3:highest>=4?2:1;
+  if(crit){level=3;cuts=0;}else level-=cuts; if(level<1)level=0;
+  const res=["disaster","grim","messy","perfect"][level];
+  renderResult({d6,d8,highest,zero,crit,res,cuts});
+  addLog(res,`${crit?"CRIT ":""}${zero?"0d":count+"d"}${thorn?"+"+thorn+"t":""} → [${d6.join(",")}]${d8.length?" ⟨"+d8.join(",")+"⟩":""}${cuts?" ·"+cuts+"cut":""}`);
+}
+function renderResult({d6,d8,highest,zero,crit,res,cuts}){
+  const sub={perfect:"Success — you avoid trouble.",messy:"Success — but the GM makes an impact move.",grim:"Failure — the GM makes an impact move.",disaster:"Failure — a worse impact move. Take spark."}[res];
+  const diceHTML=d6.map(v=>{let cl="die d6";if(!zero&&v===highest)cl+=(v===6?" six":" high");if(zero&&v!==highest)cl+=" dropped";return `<div class="${cl}">${v}</div>`;}).join("");
+  const thornHTML=d8.map(v=>`<div class="die d8${v>=7?" cut":""}">${v}</div>`).join("");
+  $("#result").innerHTML=`<div class="banner ${res}${crit?" crit":""}">${crit?"CRITICAL":res.toUpperCase()}</div>
+    <div class="subline">${crit?"Perfect — pick a bonus. Thorns ignored.":sub}${(!crit&&cuts)?` (${cuts} cut${cuts>1?"s":""})`:""}</div>
+    <div class="dice">${diceHTML}${thornHTML}</div>
+    ${crit?`<div class="crithint">Choose one — <b>Greater Effect</b> · <b>Secondary Effect</b> · <b>Setup</b>. (Else take spark.)</div>`:""}`;
+  animate($("#result"));
+}
+function rollPool(){
+  if(pool<=0){$("#result").innerHTML=`<div class="banner disaster">0d</div><div class="subline">Pool is empty — the event comes to pass.</div>`;return;}
+  const rolled=[];let kept=0;for(let i=0;i<pool;i++){const v=rint(6);rolled.push(v);if(v>=4)kept++;}
+  const dropped=pool-kept;let msg;
+  if(dropped===0)msg=`Nothing dropped — <b>push</b> (mark, drop 1d) or <b>pivot</b>.`;
+  else if(kept===0)msg="Pool cleared — the event comes to pass.";
+  else msg=`${dropped} dropped · pool is now <b>${kept}d</b>.`;
+  const diceHTML=rolled.map(v=>`<div class="die d6${v<=3?" dropped":" high"}">${v}</div>`).join("");
+  $("#result").innerHTML=`<div class="banner ${kept===0?"perfect":"messy"}">${kept}d left</div><div class="subline">${msg}</div><div class="dice">${diceHTML}</div>`;
+  animate($("#result"));addLog("pool",`pool ${pool}d → ${kept}d [${rolled.join(",")}]`);pool=kept;$("#cPool").textContent=pool;
+}
+function animate(box){const dc=box.querySelector(".dice");if(!dc)return;try{if(window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches)return;}catch(e){}box.classList.remove("rolling");void box.offsetWidth;box.classList.add("rolling");}
+let LOG=[];function addLog(type,txt){LOG.unshift({type,txt});LOG=LOG.slice(0,15);try{if(SY&&joined)SY.pushRoll({who:(lsGet(LKEY.who)||C.name||"Player"),txt:type.toUpperCase()+" · "+String(txt).replace(/<[^>]*>/g,"")});}catch(e){}$("#logBox").innerHTML=LOG.map(l=>`<div class="logline"><span class="tag ${l.type}">${l.type.toUpperCase()}</span><span>${l.txt}</span></div>`).join("");}
+
+/* ---------- CRUCIBLE ---------- */
+let themeSel=new Set(["Arcane"]);
+function buildCrucible(){
+  const tb=$("#themeBtns");tb.innerHTML="";
+  Object.keys(CRUCIBLES).forEach(name=>{const b=document.createElement("button");b.className="theme"+(themeSel.has(name)?" on":"");b.textContent=name;
+    b.addEventListener("click",()=>{if(themeSel.has(name))themeSel.delete(name);else themeSel.add(name);if(!themeSel.size)themeSel.add(name);buildCrucible();});tb.appendChild(b);});
+  buildArcanaTables();buildMoreCrucibles();
+}
+let lastArcana="";
+$("#crucRoll").addEventListener("click",()=>{
+  const words=[];themeSel.forEach(t=>words.push(...CRUCIBLES[t]));
+  const pick=()=>words[Math.floor(Math.random()*words.length)];
+  let a=pick(),b=pick(),g=0;while(b===a&&g++<20)b=pick();
+  const fn=FUNCTIONS[Math.floor(Math.random()*FUNCTIONS.length)];
+  lastArcana=`${a} · ${b} — ${fn}`;
+  $("#crucOut").innerHTML=`<div class="ts">${a} · ${b}</div><div class="fn">function: ${fn}</div>`;
+});
+$("#crucGrim").addEventListener("click",()=>{if(!lastArcana)return;addGrimoire("Arcana: "+lastArcana);flashEl($("#crucGrim"));});
+function tableHTML(t){return `<div class="cthead">${t.name}</div><div class="wgrid">`+t.words.map(w=>`<span>${w}</span>`).join("")+`</div>`;}
+function buildArcanaTables(){$("#arcanaTables").innerHTML=Object.keys(CRUCIBLES).map(k=>tableHTML({name:k,words:CRUCIBLES[k]})).join("");}
+function rollCrucible(c){
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  if(c.mode==="theorem"){const s=pick(c.tables[0].words),e=pick(c.tables[1].words),f=pick(c.tables[2].words),sch=pick(c.schools);
+    return `${s} · ${e} · ${f}<small>school: ${sch} — choose 2 words</small>`;}
+  if(c.mode==="smash"){return `${pick(c.tables[0].words)} + ${pick(c.tables[1].words)}<small>smash &amp; interpret</small>`;}
+  if(c.mode==="join"){return `${pick(c.tables[0].words)} ${pick(c.tables[1].words)}`;}
+  if(c.mode==="pick2"){const a=c.tables[0].words;let x=pick(a),y=pick(a),g=0;while(y===x&&g++<20)y=pick(a);return `${x} · ${y}`;}
+  if(c.mode==="pick1"){return pick(c.tables[0].words);}
+  return "";
+}
+function refHTML(ref){return ref?`<div class="cthead">Reference</div>`+ref.map(r=>`<div class="crefrow"><b>${r.t}</b><span>${r.d}</span></div>`).join(""):"";}
+function buildMoreCrucibles(){
+  const host=$("#moreCrucibles");host.innerHTML="";
+  MORE_CRUCIBLES.forEach(c=>{
+    const d=document.createElement("details");d.className="cruc";
+    d.innerHTML=`<summary><div class="crow"><span class="cname">${c.name}</span><button class="grimadd" title="save result to Grimoire">＋</button><button class="rollmini">🎲 Roll</button><span class="chev">▸</span></div><div class="cruc-result" data-empty>Tap roll…</div></summary>
+      <div class="body"><div class="tip" style="margin-top:0">${c.note}${c.credit?`<br><span style="color:var(--muted)">${c.credit}</span>`:""}</div>${c.tables.map(tableHTML).join("")}${refHTML(c.ref)}</div>`;
+    const out=d.querySelector(".cruc-result");
+    d.querySelector(".rollmini").addEventListener("click",e=>{e.preventDefault();e.stopPropagation();out.removeAttribute("data-empty");out.innerHTML=rollCrucible(c);});
+    d.querySelector(".grimadd").addEventListener("click",e=>{e.preventDefault();e.stopPropagation();
+      if(out.hasAttribute("data-empty"))return;addGrimoire(c.name+": "+out.textContent);flashEl(d.querySelector(".grimadd"));});
+    host.appendChild(d);
+  });
+}
+function flashEl(el){if(!el)return;const o=el.textContent;el.textContent="✓";setTimeout(()=>el.textContent=o,900);}
+
+/* ---------- BACKPACK (items + arcana) with rollable pools ---------- */
+function poolCtlEl(obj,label){
+  const wrap=document.createElement("div");wrap.className="itempool";
+  function render(){
+    wrap.innerHTML="";
+    if(!obj.dmax){const add=document.createElement("button");add.className="toolbtn";add.textContent="+ power pool";
+      add.addEventListener("click",()=>{obj.dmax=2;obj.d=2;save();render();});wrap.appendChild(add);return;}
+    const ctl=document.createElement("div");ctl.className="poolctl";
+    ctl.innerHTML=`<button>−</button><div class="pc">${obj.d}d</div><button>+</button><button title="roll" style="margin-left:6px;border-radius:8px">🎲</button><button title="reset" style="border-radius:8px">↻</button><button title="remove pool" style="border-radius:8px">🗑</button>`;
+    const b=ctl.querySelectorAll("button");
+    b[0].addEventListener("click",()=>{obj.d=Math.max(0,obj.d-1);save();render();});
+    b[1].addEventListener("click",()=>{obj.d=Math.min(12,obj.d+1);save();render();});
+    b[2].addEventListener("click",()=>{const n=obj.d;if(n<=0)return;const r=[];let k=0;for(let x=0;x<n;x++){const v=rint(6);r.push(v);if(v>=4)k++;}obj.d=k;save();render();addLog("pool",`${label||"item"} ${n}d → ${k}d [${r.join(",")}]`);});
+    b[3].addEventListener("click",()=>{obj.d=obj.dmax;save();render();});
+    b[4].addEventListener("click",()=>{obj.dmax=0;obj.d=0;save();render();});
+    wrap.appendChild(ctl);
+  }
+  render();return wrap;
+}
+function renderItems(hostSel,arrName,namePH,metaPH,emptyMsg){
+  const host=$(hostSel),arr=C[arrName];host.innerHTML="";
+  if(!arr.length){host.innerHTML=`<div class="tip" style="margin:0">${emptyMsg}</div>`;return;}
+  arr.forEach((it,i)=>{
+    const el=document.createElement("div");el.className="arc";
+    const top=document.createElement("div");top.style.cssText="display:flex;gap:6px;align-items:center";
+    const nm=document.createElement("input");nm.className="inp";nm.style.cssText="font-family:var(--display);font-weight:700;font-size:14px";nm.value=it.name||"";nm.placeholder=namePH;
+    nm.addEventListener("input",()=>{it.name=nm.value;save();});
+    const del=document.createElement("button");del.textContent="✕";del.style.cssText="color:var(--muted);background:none;border:none;font-size:15px;flex:0 0 auto";
+    del.addEventListener("click",()=>{arr.splice(i,1);save();renderItems(hostSel,arrName,namePH,metaPH,emptyMsg);});
+    top.appendChild(nm);top.appendChild(del);el.appendChild(top);
+    const meta=document.createElement("textarea");meta.className="inp";meta.rows=2;meta.placeholder=metaPH;meta.value=it.meta||"";
+    meta.style.cssText="margin-top:6px;font-family:var(--display);font-size:13px";
+    meta.addEventListener("input",()=>{it.meta=meta.value;save();});
+    el.appendChild(meta);
+    el.appendChild(poolCtlEl(it,it.name||"item"));
+    host.appendChild(el);
+  });
+}
+function buildBackpack(){
+  renderItems("#itemList","items","Item name","notes…","Your pack is empty.");
+  renderItems("#arcList","arcana","Arcana name","function · touchstones · tier…","No arcana recorded.");
+}
+$("#itemAdd").addEventListener("click",()=>{const n=$("#itemName").value.trim();if(!n)return;C.items.push({name:n,meta:"",dmax:0,d:0});$("#itemName").value="";save();buildBackpack();});
+$("#arcAdd").addEventListener("click",()=>{const n=$("#arcName").value.trim();if(!n)return;C.arcana.push({name:n,meta:"",dmax:0,d:0});$("#arcName").value="";save();buildBackpack();});
+
+/* ---------- GRIMOIRE ---------- */
+function renderGrimoire(){
+  const host=$("#grimList");if(!host)return;host.innerHTML="";
+  if(!C.grimoire.length){host.innerHTML=`<div class="tip" style="margin:0">Empty — add spells, words, rites, or notes.</div>`;return;}
+  C.grimoire.forEach((g,i)=>{
+    const row=document.createElement("div");row.style.cssText="display:flex;gap:6px;align-items:flex-start;margin-bottom:7px";
+    const ta=document.createElement("textarea");ta.className="inp";ta.rows=2;ta.value=g;ta.style.cssText="font-family:var(--display);font-size:13px";
+    ta.addEventListener("input",()=>{C.grimoire[i]=ta.value;save();});
+    const del=document.createElement("button");del.textContent="✕";del.style.cssText="color:var(--muted);background:none;border:none;font-size:15px;flex:0 0 auto;padding:6px 2px";
+    del.addEventListener("click",()=>{C.grimoire.splice(i,1);save();renderGrimoire();});
+    row.appendChild(ta);row.appendChild(del);host.appendChild(row);
+  });
+}
+function addGrimoire(text){text=(text||"").trim();if(!text)return;C.grimoire.push(text);save();renderGrimoire();}
+$("#grimAdd").addEventListener("click",()=>{const v=$("#grimName").value;if(!v.trim())return;addGrimoire(v);$("#grimName").value="";});
+
+/* ---------- EXPORT / IMPORT ---------- */
+const modal=$("#modal");
+function openModal(title,text,m){$("#modalTitle").textContent=title;$("#modalText").value=text;$("#modalDo").style.display=m==="import"?"inline-block":"none";modal.classList.add("open");}
+$("#btnExport").addEventListener("click",()=>openModal("Export character",JSON.stringify(C),"export"));
+$("#btnImport").addEventListener("click",()=>openModal("Import — paste a character code","","import"));
+$("#modalClose").addEventListener("click",()=>modal.classList.remove("open"));
+$("#modalCopy").addEventListener("click",()=>{const t=$("#modalText");t.select();try{document.execCommand("copy");}catch(e){}navigator.clipboard?.writeText(t.value).catch(()=>{});$("#modalCopy").textContent="Copied";setTimeout(()=>$("#modalCopy").textContent="Copy",1200);});
+$("#modalDo").addEventListener("click",()=>{try{const o=JSON.parse($("#modalText").value);C=Object.assign(blank(),o);save();renderAll();modal.classList.remove("open");}catch(e){alert("That doesn't look like a valid character code.");}});
+$("#btnReset").addEventListener("click",()=>{if(confirm("Clear this character on this device? Export first to keep it.")){C=blank();save();renderAll();}});
+
+/* ---------- INIT ---------- */
+function renderAll(){
+  $$("[data-k]").forEach(el=>{if(C[el.dataset.k]!==undefined)el.value=C[el.dataset.k];});
+  refreshHeader();buildStats();buildConds();renderSpark();buildBondsXp();buildTalents();buildCrucible();buildBackpack();renderGrimoire();
+}
+buildStatic();renderAll();
+setDice(dice);setThorn(thorn);$("#cPool").textContent=pool;
+
+/* ---------- iOS / storage self-check ---------- */
+/* ================= CAMPAIGN SYNC (optional) ================= */
+var LKEY={code:"gw.camp.code",who:"gw.camp.who",cid:"gw.camp.cid"};
+function lsGet(k){try{return localStorage.getItem(k)||"";}catch(e){return "";}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+var SY=null, unsubs=[], myId=lsGet(LKEY.cid), joined=false, pushT;
+if(!myId){myId="c"+Math.random().toString(36).slice(2,10);lsSet(LKEY.cid,myId);}
+
+function cbar(on,txt,sus){
+  const b=$("#cbar");if(!b)return;b.style.display="";b.classList.toggle("on",!!on);
+  $("#cbarTxt").textContent=txt;
+  $("#cbarSus").innerHTML=(sus==null?"":`Suspense <b>${sus}</b>`);
+}
+function cloudPush(){
+  if(!SY||!joined)return;clearTimeout(pushT);
+  pushT=setTimeout(()=>{SY.putChar(myId,{who:lsGet(LKEY.who)||"Player",name:C.name||"",cls:C.cls||"",sheet:C});},600);
+}
+function joinCampaign(code,who){
+  if(!SY)return;
+  unsubs.forEach(u=>{try{u();}catch(e){}});unsubs=[];
+  if(!code){joined=false;cbar(false,"Offline — this device only",null);$("#feedWrap").style.display="none";return;}
+  lsSet(LKEY.code,code);lsSet(LKEY.who,who||"");
+  SY.join(code);joined=true;
+  cbar(true,"Campaign: "+code,null);
+  cloudPush();
+  unsubs.push(SY.watchMeta(m=>{cbar(true,"Campaign: "+code,(m&&typeof m.suspense==="number")?m.suspense:0);}));
+  unsubs.push(SY.watchRolls(list=>{
+    const box=$("#feedBox");if(!box)return;$("#feedWrap").style.display="";
+    box.innerHTML=list.map(r=>`<div class="feedline"><span class="who">${escName(r.who||"?")}</span><span>${escName(r.txt||"")}</span></div>`).join("")
+      ||`<div class="tip" style="margin:0">No rolls yet.</div>`;
+  },25));
+  unsubs.push(SY.watchChars(list=>{
+    // pull my own sheet if another device of mine changed it
+    const mine=list.find(x=>x.id===myId);
+    if(mine&&mine.by&&SY.device&&mine.by!==SY.device&&mine.sheet){
+      C=Object.assign(blank(),mine.sheet);save();renderAll();
+    }
+  }));
+}
+window.addEventListener("gwsync-ready",()=>{
+  SY=window.GWSync||null;
+  if(!SY){cbar(false,"Offline — this device only",null);return;}
+  $("#campCard").style.display="";
+  $("#campCode").value=lsGet(LKEY.code);$("#campWho").value=lsGet(LKEY.who);
+  $("#campJoin").addEventListener("click",()=>joinCampaign($("#campCode").value.trim().toLowerCase(),$("#campWho").value.trim()));
+  $("#campLeave").addEventListener("click",()=>{lsSet(LKEY.code,"");joinCampaign("","");});
+  const c=lsGet(LKEY.code);if(c)joinCampaign(c,lsGet(LKEY.who));else cbar(false,"Not in a campaign",null);
+});
+
+function diag(html){const host=$("#diag");if(!host)return;const el=document.createElement("div");el.className="msg";
+  el.innerHTML=html+' <button aria-label="dismiss">✕</button>';el.querySelector("button").addEventListener("click",()=>el.remove());host.appendChild(el);}
+function storageOK(){try{localStorage.setItem("__gw_t","1");const v=localStorage.getItem("__gw_t");localStorage.removeItem("__gw_t");return v==="1";}catch(e){return false;}}
+if(!storageOK()){
+  diag('⚠︎ <b>Saving is turned off in this browser</b>, so your character won\u2019t be kept after you close this. This usually happens when the file is opened from a preview or with cookies blocked. Fix: open it in <b>Safari</b> (Share \u2192 Open in Safari), then <b>Add to Home Screen</b> \u2014 or host it online. Meanwhile, use <b>Export</b> on the Sheet tab to back up your character text.');
+}
+</script>
+<script type="module">
+/* ===== Grimwild shared sync (Firebase Firestore) =====
+   Loads only if window.GW_FIREBASE_CONFIG is filled in.
+   If anything fails (no config, offline, blocked CDN) the app silently
+   stays in local-only mode — every feature keeps working on-device. */
+const V = "12.16.0";
+const CFG = window.GW_FIREBASE_CONFIG || {};
+function ready(){ try{ window.dispatchEvent(new Event("gwsync-ready")); }catch(e){} }
+
+if (CFG && CFG.projectId) {
+  try {
+    const { initializeApp } = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-app.js`);
+    const FS = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-firestore.js`);
+    const app = initializeApp(CFG);
+
+    // offline persistence: play continues through dropped wifi, syncs on reconnect
+    let db;
+    try {
+      db = FS.initializeFirestore(app, {
+        localCache: FS.persistentLocalCache({ tabManager: FS.persistentMultipleTabManager() })
+      });
+    } catch (e) { db = FS.getFirestore(app); }
+
+    // stable per-device id so we can ignore echoes of our own writes
+    let dev = "";
+    try { dev = localStorage.getItem("gw.device") || ""; } catch (e) {}
+    if (!dev) { dev = "d" + Math.random().toString(36).slice(2, 10); try { localStorage.setItem("gw.device", dev); } catch (e) {} }
+
+    let code = "";
+    const campaign = () => FS.doc(db, "campaigns", code);
+    const chars    = () => FS.collection(db, "campaigns", code, "characters");
+    const rolls    = () => FS.collection(db, "campaigns", code, "rolls");
+
+    window.GWSync = {
+      device: dev,
+      get code(){ return code; },
+      join(c){ code = String(c || "").trim().toLowerCase(); return !!code; },
+
+      /* characters */
+      putChar(id, data){
+        if (!code || !id) return Promise.resolve();
+        // fields are written at the TOP LEVEL so readers can use rec.sheet / rec.who.
+        // full overwrite (no merge): each character doc is owned by one player.
+        return FS.setDoc(FS.doc(chars(), id),
+          Object.assign({}, data, { by: dev, updatedAt: FS.serverTimestamp() })).catch(()=>{});
+      },
+      delChar(id){ if(!code||!id) return Promise.resolve();
+        return FS.deleteDoc(FS.doc(chars(), id)).catch(()=>{}); },
+      watchChars(cb){
+        if (!code) return ()=>{};
+        try {
+          return FS.onSnapshot(chars(), snap => {
+            const out = [];
+            snap.forEach(d => out.push(Object.assign({ id: d.id }, d.data())));
+            cb(out);
+          }, ()=>{});
+        } catch (e) { return ()=>{}; }
+      },
+
+      /* shared roll feed */
+      pushRoll(entry){
+        if (!code) return Promise.resolve();
+        return FS.addDoc(rolls(), Object.assign({ by: dev, ts: FS.serverTimestamp() }, entry)).catch(()=>{});
+      },
+      watchRolls(cb, n){
+        if (!code) return ()=>{};
+        try {
+          const q = FS.query(rolls(), FS.orderBy("ts", "desc"), FS.limit(n || 25));
+          return FS.onSnapshot(q, snap => {
+            const out = [];
+            snap.forEach(d => out.push(Object.assign({ id: d.id }, d.data())));
+            cb(out);
+          }, ()=>{});
+        } catch (e) { return ()=>{}; }
+      },
+      async clearRolls(){
+        if (!code) return;
+        try {
+          const snap = await FS.getDocs(rolls());
+          const jobs = [];
+          snap.forEach(d => jobs.push(FS.deleteDoc(d.ref)));
+          await Promise.all(jobs);
+        } catch (e) {}
+      },
+
+      /* campaign meta (suspense) */
+      setMeta(obj){
+        if (!code) return Promise.resolve();
+        return FS.setDoc(campaign(), Object.assign({ by: dev, updatedAt: FS.serverTimestamp() }, obj), { merge: true }).catch(()=>{});
+      },
+      watchMeta(cb){
+        if (!code) return ()=>{};
+        try { return FS.onSnapshot(campaign(), d => cb(d.exists() ? d.data() : {}), ()=>{}); }
+        catch (e) { return ()=>{}; }
+      }
+    };
+  } catch (e) {
+    window.GWSync = null;   // stay local-only
+  }
+}
+ready();
+
+</script>
+</body>
+</html>
