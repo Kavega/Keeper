@@ -24,6 +24,10 @@
   button{font-family:inherit;color:inherit;cursor:pointer;}
   input,textarea,select{font-family:inherit;color:var(--bone);background:transparent;border:none;outline:none;}
   ::placeholder{color:var(--muted);}
+  .prow{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;}
+  .portrait{width:82px;height:82px;flex:0 0 auto;border-radius:12px;border:1px solid var(--line);background:var(--bg2) center/cover no-repeat;
+    display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:10px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;touch-action:manipulation;overflow:hidden;}
+  .portrait.has{border-color:var(--gold-deep);} .portrait.has span{display:none;}
   .cbar{display:flex;align-items:center;gap:8px;padding:6px 14px;border-top:1px solid var(--line);background:#12100c;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
   .cbar .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:0 0 auto;}
   .cbar.on .dot{background:#7fa06a;box-shadow:0 0 6px rgba(127,160,106,.7);} .cbar.on{color:var(--bone-dim);}
@@ -271,8 +275,15 @@ window.addEventListener("error",function(ev){
   <section class="card">
     <h2>Character</h2>
     <div class="body">
-      <label class="field"><span class="lbl">Character name (pronouns)</span><input class="inp" data-k="name" placeholder="Who are you?"></label>
-      <label class="field"><span class="lbl">Path / Class</span><select class="inp" data-k="cls" id="clsSel"></select></label>
+      <div class="prow">
+        <div class="portrait" id="portrait" role="button" tabindex="0" aria-label="Add a portrait"><span>Add<br>photo</span></div>
+        <div style="flex:1;min-width:0">
+          <label class="field"><span class="lbl">Character name (pronouns)</span><input class="inp" data-k="name" placeholder="Who are you?"></label>
+          <label class="field" style="margin-bottom:0"><span class="lbl">Path / Class</span><select class="inp" data-k="cls" id="clsSel"></select></label>
+        </div>
+      </div>
+      <input type="file" id="portFile" accept="image/*" style="display:none">
+      <div class="row-actions" style="margin:10px 0 12px"><button class="toolbtn" id="portPick">Add / change portrait</button><button class="toolbtn" id="portClear">Remove</button></div>
       <label class="field"><span class="lbl">Player name (pronouns)</span><input class="inp" data-k="player"></label>
       <label class="field"><span class="lbl">Distinctive features</span><textarea class="inp" data-k="features" rows="2"></textarea></label>
     </div>
@@ -485,7 +496,7 @@ const STATS=[["BRA","Brawn","phys"],["AGI","Agility","phys"],["WIT","Wits","ment
 const XP_ROWS=[2,3,4,5,6,7], BOND_ROWS=4;
 
 function blank(){return{
-  name:"",cls:"Adventurer",player:"",features:"",weapon:"",bg:"",
+  name:"",cls:"Adventurer",player:"",features:"",weapon:"",bg:"",portrait:"",
   traitsAre:"",traitsNot:"",desireWant:"",desireNot:"",
   stats:{BRA:1,AGI:1,WIT:1,PRE:1}, marks:{BRA:false,AGI:false,WIT:false,PRE:false},
   harm:{bloodied:false,rattled:false,desperate:false,dead:false},
@@ -503,6 +514,45 @@ function buildStatic(){
   const sel=$("#clsSel");sel.innerHTML="";CLASSES.forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=c;sel.appendChild(o);});
   $$("[data-k]").forEach(el=>{const k=el.dataset.k;if(C[k]!==undefined)el.value=C[k];
     el.addEventListener("input",()=>{C[k]=el.value;save();if(k==="name"||k==="cls")refreshHeader();if(k==="cls")buildTalents();});});
+}
+function renderPortrait(){
+  const el=$("#portrait");if(!el)return;
+  if(C.portrait){el.style.backgroundImage='url("'+C.portrait+'")';el.classList.add("has");}
+  else{el.style.backgroundImage="";el.classList.remove("has");}
+}
+/* Phone photos are several MB — far too big for device storage or a synced
+   document — so downscale to a 320px square JPEG (usually 20–40 KB) first. */
+function loadPortrait(file){
+  if(!file)return;
+  if(!/^image\//.test(file.type||"")){alert("Please choose an image file.");return;}
+  const fr=new FileReader();
+  fr.onerror=()=>alert("Couldn't read that file.");
+  fr.onload=()=>{
+    const img=new Image();
+    img.onerror=()=>alert("That image couldn't be opened.");
+    img.onload=()=>{
+      try{
+        const S=320,c=document.createElement("canvas");c.width=S;c.height=S;
+        const ctx=c.getContext&&c.getContext("2d");
+        if(!ctx){alert("This browser can't process images.");return;}
+        const sc=Math.max(S/img.width,S/img.height),w=img.width*sc,h=img.height*sc;
+        ctx.drawImage(img,(S-w)/2,(S-h)/2,w,h);
+        const out=c.toDataURL("image/jpeg",0.72);
+        if(out.length>700000){alert("That image is too large even after resizing — try another.");return;}
+        C.portrait=out;save();renderPortrait();
+      }catch(e){alert("Couldn't process that image.");}
+    };
+    img.src=fr.result;
+  };
+  fr.readAsDataURL(file);
+}
+function wirePortrait(){
+  const f=$("#portFile");if(!f)return;
+  const pick=()=>f.click();
+  $("#portrait").addEventListener("click",pick);
+  $("#portPick").addEventListener("click",pick);
+  $("#portClear").addEventListener("click",()=>{C.portrait="";save();renderPortrait();f.value="";});
+  f.addEventListener("change",e=>{loadPortrait(e.target.files&&e.target.files[0]);});
 }
 function refreshHeader(){$("#tbName").textContent=(C.name||"New character")+(C.cls?" · "+C.cls:"");}
 
@@ -888,9 +938,9 @@ $("#btnReset").addEventListener("click",()=>{if(confirm("Clear this character on
 /* ---------- INIT ---------- */
 function renderAll(){
   $$("[data-k]").forEach(el=>{if(C[el.dataset.k]!==undefined)el.value=C[el.dataset.k];});
-  refreshHeader();buildStats();buildConds();renderSpark();buildBondsXp();buildTalents();buildCrucible();buildBackpack();renderGrimoire();
+  refreshHeader();renderPortrait();buildStats();buildConds();renderSpark();buildBondsXp();buildTalents();buildCrucible();buildBackpack();renderGrimoire();
 }
-buildStatic();renderAll();
+buildStatic();wirePortrait();renderAll();
 setDice(dice);setThorn(thorn);$("#cPool").textContent=pool;
 
 /* ---------- iOS / storage self-check ---------- */
