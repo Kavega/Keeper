@@ -32,6 +32,12 @@
   .pc>summary{list-style:none;cursor:pointer;padding:10px 11px;}
   .pc>summary::-webkit-details-marker{display:none;}
   .pc .ph{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .inlineroll{margin-top:9px;padding-top:8px;border-top:1px dashed var(--line);}
+  .ird{display:flex;flex-wrap:wrap;gap:5px;}
+  .idie{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;
+    background:#2c2413;border:1px solid var(--gold-deep);color:var(--gold);}
+  .idie.drop{background:var(--surface2);border-color:var(--line);color:var(--muted);opacity:.55;text-decoration:line-through;}
+  .irm{font-size:11.5px;color:var(--bone-dim);margin-top:5px;}
   .chal{border:1px solid var(--line);border-radius:10px;background:var(--bg2);padding:10px 11px;margin-bottom:11px;}
   .chal .cn2{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:8px 9px;font-size:16px;font-weight:700;color:var(--bone);}
   .chal .crow2{display:flex;align-items:center;gap:8px;margin-top:9px;flex-wrap:wrap;}
@@ -491,7 +497,7 @@ const rint=n=>Math.floor(Math.random()*n)+1;
 function blank(){return{suspense:0,pools:[],notes:"",challenges:[]};}
 let C=load();
 function load(){try{const s=localStorage.getItem(KEY);if(s)return Object.assign(blank(),JSON.parse(s));}catch(e){}return blank();}
-let sT;function save(){clearTimeout(sT);sT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(C));}catch(e){}},250);}
+let sT;function save(){clearTimeout(sT);sT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(C,(k,v)=>(k==="_roll"||k==="_t")?undefined:v));}catch(e){}},250);}
 
 /* nav */
 function go(v){$$(".view").forEach(x=>x.classList.remove("active"));$("#view-"+v).classList.add("active");$$(".nav button").forEach(b=>b.classList.toggle("on",b.dataset.view===v));try{window.scrollTo(0,0);}catch(e){}}
@@ -529,6 +535,8 @@ function renderPools(){
       const n=p.d;if(n<=0){addLog("pool",`${p.name}: already 0d — event happens`);return;}
       const r=[];let k=0;for(let x=0;x<n;x++){const v=rint(6);r.push(v);if(v>=4)k++;}
       p.d=k;save();renderPools();
+      const card=[...$("#poolList").children].find(c=>c.querySelector(".pn")&&c.querySelector(".pn").value===p.name);
+      showRoll(card||el, r, k===0?"Event happens!":(k===n?"Nothing dropped — push or pivot.":`${n-k} dropped · now ${k}d`));
       addLog("pool",`${p.name} ${n}d → ${k}d [${r.join(",")}]${k===0?" · event happens!":(k===n?" · nothing dropped (push/pivot)":"")}`);
     });
     host.appendChild(el);
@@ -542,10 +550,29 @@ $("#poolAdd").addEventListener("click",()=>{
   $("#poolName").value="";save();renderPools();
 });
 
+/* A tapped button takes focus too, so guarding on "anything focused" made the
+   UI look frozen until you tapped elsewhere. Only live text entry should block
+   a redraw. */
+/* Show the dice where they were rolled, not just in the log. */
+function showRoll(host,dice,msg){
+  if(!host)return;
+  let box=host.querySelector(".inlineroll");
+  if(!box){box=document.createElement("div");box.className="inlineroll";host.appendChild(box);}
+  box.innerHTML=`<div class="ird">`+dice.map(v=>`<span class="idie${v<=3?" drop":""}">${v}</span>`).join("")+`</div>`+
+                (msg?`<div class="irm">${msg}</div>`:"");
+  clearTimeout(box._t);box._t=setTimeout(()=>{try{box.remove();}catch(e){}},9000);
+}
+function typingIn(host){
+  const a=document.activeElement;
+  if(!a||a===document.body||!host.contains(a))return false;
+  const t=(a.tagName||"").toLowerCase();
+  return t==="textarea"||(t==="input"&&!/^(button|checkbox|radio|submit)$/i.test(a.type||"text"));
+}
+
 /* ---------- CHALLENGES ---------- */
 function renderChal(){
   const host=$("#chalList");if(!host)return;
-  if(host.contains(document.activeElement)&&document.activeElement!==document.body)return;
+  if(typingIn(host))return;
   C.challenges=C.challenges||[];
   if(!C.challenges.length){host.innerHTML=`<div class="tip" style="margin:0">No challenges yet.</div>`;return;}
   host.innerHTML="";
@@ -574,11 +601,16 @@ function renderChal(){
     el.querySelector(".roll").addEventListener("click",()=>{
       const n=ch.d;if(n<=0){addLog("pool",`${ch.name||"challenge"}: already 0d — it comes to pass`);return;}
       const r=[];let k=0;for(let x=0;x<n;x++){const v=rint(6);r.push(v);if(v>=4)k++;}
-      ch.d=k;save();renderChal();
+      ch.d=k;save();
+      // stash the result on the challenge so it survives the re-render below
+      ch._roll={dice:r,msg:(k===0?"Comes to pass!":(k===n?"Nothing dropped — push or pivot.":`${n-k} dropped · now ${k}d`))};
+      renderChal();
       addLog("pool",`${ch.name||"challenge"} ${n}d → ${k}d [${r.join(",")}]${k===0?" · it comes to pass!":(k===n?" · nothing dropped (push/pivot)":"")}`);});
     el.querySelector(".del").addEventListener("click",()=>{
       if(confirm("Remove this challenge?")){C.challenges.splice(i,1);save();renderChal();renderSusp();bcastSusp();}});
     host.appendChild(el);
+    if(ch._roll){showRoll(el,ch._roll.dice,ch._roll.msg);
+      clearTimeout(ch._t);ch._t=setTimeout(()=>{delete ch._roll;},9000);}
   });
 }
 $("#chalAdd").addEventListener("click",()=>{
@@ -704,7 +736,7 @@ function renderParty(list){
   if(list)PARTY=list;
   const host=$("#partyList");if(!host)return;
   // don't yank the card out from under the GM mid-edit
-  if(host.contains(document.activeElement)&&document.activeElement!==document.body){pPending=true;return;}
+  if(typingIn(host)){pPending=true;return;}
   if(!PARTY.length){host.innerHTML=`<div class="tip" style="margin:0">No characters yet — players join with the campaign code.</div>`;return;}
   host.innerHTML="";
   PARTY.slice().sort((a,b)=>String((a.sheet&&a.sheet.name)||"").localeCompare(String((b.sheet&&b.sheet.name)||"")))
@@ -754,8 +786,8 @@ function renderParty(list){
       <div class="subhead">Conditions <span class="gmedit">editable</span></div>
       <div data-conds></div>
       <button class="toolbtn" data-addcond>+ Add condition</button>
-      <div class="subhead">Kit &amp; backgrounds</div>
-      <div class="ptxt">${eh([s.weapon?("Kit: "+s.weapon):"",s.bg||"",s.features?("Features: "+s.features):""].filter(Boolean).join("\n"))||"<span style='color:var(--muted)'>—</span>"}</div>
+      <div class="subhead">Kit, backgrounds &amp; languages</div>
+      <div class="ptxt">${eh([s.weapon?("Kit: "+s.weapon):"",s.bg||"",s.langs?("Languages: "+s.langs):"",s.features?("Features: "+s.features):""].filter(Boolean).join("\n"))||"—"}</div>
       <div class="subhead">Talents</div>
       <div data-tal></div>`;
     el.appendChild(body);
