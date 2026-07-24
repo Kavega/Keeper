@@ -28,6 +28,12 @@
   .portrait{width:82px;height:82px;flex:0 0 auto;border-radius:12px;border:1px solid var(--line);background:var(--bg2) center/cover no-repeat;
     display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:10px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;touch-action:manipulation;overflow:hidden;}
   .portrait.has{border-color:var(--gold-deep);} .portrait.has span{display:none;}
+  .swipetoast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(6px);
+    background:#0c0a07;border:1px solid var(--gold-deep);color:var(--gold);border-radius:16px;padding:7px 16px;
+    font-size:11px;letter-spacing:.14em;text-transform:uppercase;z-index:70;opacity:0;pointer-events:none;
+    transition:opacity .18s,transform .18s;box-shadow:0 6px 18px rgba(0,0,0,.5);}
+  .swipetoast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  @media (prefers-reduced-motion:reduce){.swipetoast{transition:none;}}
   .cbar{display:flex;align-items:center;gap:8px;padding:6px 14px;border-top:1px solid var(--line);background:#12100c;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
   .cbar .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:0 0 auto;}
   .cbar.on .dot{background:#7fa06a;box-shadow:0 0 6px rgba(127,160,106,.7);} .cbar.on{color:var(--bone-dim);}
@@ -369,6 +375,7 @@ window.addEventListener("error",function(ev){
   <section class="card"><h2>This device</h2>
     <div class="body">
       <div class="tip" style="margin-top:0">Everything autosaves to this phone only. Export to back up or hand your character to someone else.</div>
+      <div class="tip"><b>Tip:</b> swipe left or right anywhere on the page to move between tabs.</div>
       <div class="tip"><b>On iPhone:</b> open this file in <b>Safari</b> (from Files or Share → Open in Safari), then <b>Add to Home Screen</b> so it saves reliably and opens like an app. Opening it straight from Mail/Messages as a preview may not save — Export first if unsure.</div>
       <div class="row-actions" style="margin-top:10px">
         <button class="toolbtn" id="btnExport">Export</button>
@@ -961,6 +968,76 @@ function renderAll(){
 }
 buildStatic();wirePortrait();renderAll();
 setDice(dice);setThorn(thorn);$("#cPool").textContent=pool;
+
+/* ---------- swipe between tabs (mobile) ----------
+   Deliberately conservative so it never steals another gesture:
+   - ignores anything starting near the screen edges (iOS back/forward swipe)
+   - ignores gestures that begin on text fields, the tab strip, or anything
+     that scrolls sideways (word tables, etc.)
+   - requires a mostly-horizontal, reasonably quick movement
+   - does nothing while a modal is open                                    */
+(function(){
+  var EDGE=30, MIN_X=55, RATIO=1.6, MAX_MS=800;
+  var x0=0, y0=0, t0=0, armed=false;
+
+  function tabs(){ return $$(".nav button").map(function(b){return b.dataset.view;}); }
+  function current(){ var a=$(".view.active"); return a?a.id.replace("view-",""):null; }
+
+  function blocked(el){
+    while(el && el!==document.body && el.nodeType===1){
+      var tag=(el.tagName||"").toLowerCase();
+      if(tag==="input"||tag==="textarea"||tag==="select") return true;
+      if(el.classList && (el.classList.contains("nav")||el.classList.contains("wgrid"))) return true;
+      if(el.scrollWidth && el.clientWidth && el.scrollWidth > el.clientWidth+4) return true;
+      el=el.parentElement;
+    }
+    return false;
+  }
+
+  document.addEventListener("touchstart", function(e){
+    armed=false;
+    if($(".modal.open")) return;
+    if(!e.touches || e.touches.length!==1) return;
+    var t=e.touches[0], w=window.innerWidth||360;
+    if(t.clientX<EDGE || t.clientX>w-EDGE) return;      // leave edge swipes to the OS
+    if(blocked(e.target)) return;
+    x0=t.clientX; y0=t.clientY; t0=Date.now(); armed=true;
+  }, {passive:true});
+
+  document.addEventListener("touchend", function(e){
+    if(!armed) return; armed=false;
+    var t=(e.changedTouches&&e.changedTouches[0])||(e.touches&&e.touches[0]);
+    if(!t) return;
+    var dx=t.clientX-x0, dy=t.clientY-y0;
+    if(Date.now()-t0 > MAX_MS) return;
+    if(Math.abs(dx) < MIN_X) return;
+    if(Math.abs(dx) < Math.abs(dy)*RATIO) return;        // that was a scroll
+    var v=tabs(), i=v.indexOf(current());
+    if(i<0) return;
+    var j = dx<0 ? i+1 : i-1;
+    if(j<0 || j>=v.length) return;
+    go(v[j]);
+    toast(v[j]);
+  }, {passive:true});
+
+  function toast(name){
+    var btn=$$(".nav button").filter(function(b){return b.dataset.view===name;})[0];
+    var label=name;
+    if(btn){
+      var ic=btn.querySelector(".ic");
+      label=(ic?btn.textContent.replace(ic.textContent,""):btn.textContent).trim();
+    }
+    var el=document.getElementById("swipeToast");
+    if(!el){
+      el=document.createElement("div"); el.id="swipeToast"; el.className="swipetoast";
+      document.body.appendChild(el);
+    }
+    el.textContent=label;
+    el.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t=setTimeout(function(){ el.classList.remove("show"); }, 900);
+  }
+})();
 
 /* ---------- iOS / storage self-check ---------- */
 /* ================= CAMPAIGN SYNC (optional) ================= */
