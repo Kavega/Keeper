@@ -325,6 +325,7 @@ window.addEventListener("error",function(ev){
     <div class="body">
       <label class="field"><span class="lbl">Kit</span><input class="inp" data-k="weapon"></label>
       <label class="field"><span class="lbl">Backgrounds &amp; wises</span><textarea class="inp" data-k="bg" rows="3"></textarea></label>
+      <label class="field"><span class="lbl">Languages</span><textarea class="inp" data-k="langs" rows="2" placeholder="e.g. Common, Gnomish, Old Sylvan (halting)"></textarea></label>
     </div>
   </section>
 
@@ -497,7 +498,7 @@ const STATS=[["BRA","Brawn","phys"],["AGI","Agility","phys"],["WIT","Wits","ment
 const XP_ROWS=[2,3,4,5,6,7], BOND_ROWS=4;
 
 function blank(){return{
-  name:"",cls:"Adventurer",player:"",features:"",weapon:"",bg:"",portrait:"",
+  name:"",cls:"Adventurer",player:"",features:"",weapon:"",bg:"",langs:"",portrait:"",
   traitsAre:"",traitsNot:"",desireWant:"",desireNot:"",
   stats:{BRA:1,AGI:1,WIT:1,PRE:1}, marks:{BRA:false,AGI:false,WIT:false,PRE:false},
   harm:{bloodied:false,rattled:false,desperate:false,dead:false},
